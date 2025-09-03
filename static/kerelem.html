@@ -7,6 +7,12 @@
     <style>
         body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
     .container { width: 900px; max-width: 100%; margin: 2rem auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    @media (max-width: 600px) {
+        .container { width: 100%; padding: 0.5rem; border-radius: 0; box-shadow: none; }
+        h1 { font-size: 1.3rem; }
+        label, input, select, textarea { font-size: 1rem; }
+        canvas { width: 100% !important; height: 80px !important; }
+    }
         h1 { text-align: center; }
         label { display: block; margin-top: 1rem; }
         input, select, textarea { width: 100%; padding: 0.5rem; margin-top: 0.3rem; }
@@ -19,12 +25,12 @@
     <div class="container">
         <h1>Kérelem Generátor</h1>
         <form id="requestForm">
-            <label>Szülő neve <input name="parentName" required value="Kovácsova Viktória"></label>
-            <label>Csoport <input name="group" required value="Pillangó"></label>
-            <label>Gyermek neve <input name="childName" required value="Nagy Péter"></label>
-            <label>Indok <input name="reason" required value="családi"></label>
-            <label>Kezdő dátum <input type="date" name="fromDate" required value="2025-09-10"></label>
-            <label>Vég dátum <input type="date" name="toDate" required value="2025-09-12"></label>
+            <label>Szülő neve <input name="parentName" required></label>
+            <label>Csoport <input name="group" required></label>
+            <label>Gyermek neve <input name="childName" required></label>
+            <label>Indok <input name="reason" required></label>
+            <label>Kezdő dátum <input type="date" name="fromDate" required></label>
+            <label>Vég dátum <input type="date" name="toDate" required></label>
             <label>Aláírás (rajzold le):</label>
             <canvas id="signature" width="400" height="100"></canvas>
             <button type="button" onclick="clearSignature()">Törlés</button>
@@ -38,50 +44,157 @@
                 <button type="submit">Generálás</button>
             </div>
         </form>
-        <div id="result"></div>
+    <div id="validationMsg" style="color: red; margin-top: 1rem;"></div>
+    <div id="result"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
-    // Signature canvas logic
+    // Signature canvas logic with caching and smoothing
     const canvas = document.getElementById('signature');
     const ctx = canvas.getContext('2d');
     ctx.strokeStyle = '#1a237e'; // ink-like color
     ctx.lineWidth = 2;
     let drawing = false;
-    canvas.addEventListener('mousedown', e => { drawing = true; ctx.beginPath(); });
-    canvas.addEventListener('mouseup', e => { drawing = false; });
-    canvas.addEventListener('mouseout', e => { drawing = false; });
+    let points = [];
+    // Load cached signature if exists
+    const cachedSignature = localStorage.getItem('kerelem_signature');
+    if (cachedSignature) {
+        const img = new window.Image();
+        img.onload = function() { ctx.drawImage(img, 0, 0); };
+        img.src = cachedSignature;
+    }
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        if (e.touches) {
+            return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+        } else {
+            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+    }
+    function drawSmoothLine() {
+        if (points.length < 3) {
+            const p = points[0];
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, ctx.lineWidth / 2, 0, 2 * Math.PI, true);
+            ctx.fill();
+            ctx.closePath();
+            return;
+        }
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length - 2; i++) {
+            const c = (points[i].x + points[i + 1].x) / 2;
+            const d = (points[i].y + points[i + 1].y) / 2;
+            ctx.quadraticCurveTo(points[i].x, points[i].y, c, d);
+        }
+        ctx.quadraticCurveTo(
+            points[points.length - 2].x,
+            points[points.length - 2].y,
+            points[points.length - 1].x,
+            points[points.length - 1].y
+        );
+        ctx.stroke();
+    }
+    canvas.addEventListener('mousedown', e => {
+        drawing = true;
+        points = [getPos(e)];
+    });
+    canvas.addEventListener('touchstart', e => {
+        drawing = true;
+        points = [getPos(e)];
+    });
+    canvas.addEventListener('mouseup', e => {
+        drawing = false;
+        localStorage.setItem('kerelem_signature', canvas.toDataURL('image/png'));
+    });
+    canvas.addEventListener('touchend', e => {
+        drawing = false;
+        localStorage.setItem('kerelem_signature', canvas.toDataURL('image/png'));
+    });
     canvas.addEventListener('mousemove', e => {
         if (!drawing) return;
-        const rect = canvas.getBoundingClientRect();
-        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-        ctx.stroke();
+        points.push(getPos(e));
+        drawSmoothLine();
+    });
+    canvas.addEventListener('touchmove', e => {
+        if (!drawing) return;
+        points.push(getPos(e));
+        drawSmoothLine();
     });
     window.clearSignature = function() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        localStorage.removeItem('kerelem_signature');
     }
 
-    document.getElementById('requestForm').onsubmit = async function(e) {
+    // Cache form values on change
+    const form = document.getElementById('requestForm');
+    ['parentName','group','childName','reason','fromDate','toDate'].forEach(name => {
+        const input = form[name];
+        input.value = localStorage.getItem('kerelem_' + name) || '';
+        input.addEventListener('input', () => {
+            localStorage.setItem('kerelem_' + name, input.value);
+        });
+    });
+
+    // Cache preferred download type
+    const formatSelect = form.format;
+    formatSelect.value = localStorage.getItem('kerelem_format') || 'pdf';
+    formatSelect.addEventListener('change', () => {
+        localStorage.setItem('kerelem_format', formatSelect.value);
+    });
+
+    // Cache signature on change
+    canvas.addEventListener('mouseup', () => {
+        localStorage.setItem('kerelem_signature', canvas.toDataURL('image/png'));
+    });
+    canvas.addEventListener('touchend', () => {
+        localStorage.setItem('kerelem_signature', canvas.toDataURL('image/png'));
+    });
+
+    form.onsubmit = async function(e) {
         e.preventDefault();
-        const form = e.target;
-        const parentName = form.parentName.value;
-        const group = form.group.value;
-        const childName = form.childName.value;
-        const reason = form.reason.value;
+        // Validation
+        const parentName = form.parentName.value.trim();
+        const group = form.group.value.trim();
+        const childName = form.childName.value.trim();
+        const reason = form.reason.value.trim();
         const fromDate = form.fromDate.value;
         const toDate = form.toDate.value;
         const format = form.format.value;
+        let valid = true;
+        let msg = '';
+        if (!parentName || !group || !childName || !reason || !fromDate || !toDate) {
+            valid = false;
+            msg = 'Minden mező kitöltése kötelező!';
+        } else if (toDate < fromDate) {
+            valid = false;
+            msg = 'A vég dátum nem lehet korábbi, mint a kezdő dátum!';
+        }
+        if (!localStorage.getItem('kerelem_signature')) {
+            valid = false;
+            msg = 'Kérjük, rajzolja le az aláírást!';
+        }
+        document.getElementById('validationMsg').textContent = msg;
+        if (!valid) return;
+        // Calculate onDate (one day before fromDate)
+        let onDate = '';
+        if (fromDate) {
+            const d = new Date(fromDate);
+            d.setDate(d.getDate() - 1);
+            onDate = d.toISOString().slice(0, 10);
+        }
         // Get signature image
         const signatureData = canvas.toDataURL('image/png');
+        localStorage.setItem('kerelem_signature', signatureData);
         // Compose document HTML
-    const docHtml = `
-    <div id="exportDoc" style="font-family: Arial; color: #222; width: 900px; padding: 75px 150px; background: #fff; box-sizing: border-box;">
+        const docHtml = `
+        <div id="exportDoc" style="font-family: Arial; color: #222; width: 900px; padding: 45px 150px 75px; background: #fff; box-sizing: border-box;">
             <h2 style="text-align:center;">KÉRELEM</h2>
             <p>Alulírott <b>${parentName}</b> (szülő neve) azzal a kéréssel fordulok a <b>${group}</b> csoport óvodapedagógusához, hogy a Nagybácsai Óvoda Kisbácsai Tagóvodájában jogviszonnyal rendelkező <b>${childName}</b> nevű gyermekem távolmaradását <b>${reason}</b> ok miatt, <b>${fromDate}</b>-tól <b>${toDate}</b>-ig engedélyezni szíveskedjen.</p>
             <br><br>
             <div style="display:flex; justify-content:space-between;">
-                <div>Győr,</div>
+                <div>Győr, <b>${onDate}</b></div>
                 <div style="text-align:center;">
                     <img src="${signatureData}" style="height:50px; border-bottom:1px solid #222; display:block; margin:auto;">
                     <div>szülő aláírása</div>
@@ -111,6 +224,7 @@
             const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: 'a4' });
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
+            const fileName = `kerelem_${fromDate}_${toDate}.pdf`;
             await html2canvas(exportDoc, { scale: 2, width: exportWidth, height: exportHeight }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 // Calculate scale to fit image to page
@@ -120,14 +234,17 @@
                 const x = (pageWidth - imgW) / 2;
                 const y = (pageHeight - imgH) / 2;
                 pdf.addImage(imgData, 'PNG', x, y, imgW, imgH);
-                pdf.save('kerelem.pdf');
+                const pdfBlob = pdf.output('blob');
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                window.open(pdfUrl, '_blank');
             });
         } else {
+            const fileName = `kerelem_${fromDate}_${toDate}.png`;
             await html2canvas(exportDoc, { scale: 2, width: exportWidth, height: exportHeight }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 const link = document.createElement('a');
                 link.href = imgData;
-                link.download = 'kerelem.png';
+                link.download = fileName;
                 link.click();
             });
         }
