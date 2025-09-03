@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kérelem Generátor</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+    .container { width: 900px; max-width: 100%; margin: 2rem auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { text-align: center; }
+        label { display: block; margin-top: 1rem; }
+        input, select, textarea { width: 100%; padding: 0.5rem; margin-top: 0.3rem; }
+        canvas { border: 1px solid #333; display: block; margin: 1rem 0; }
+        .actions { text-align: center; margin-top: 2rem; }
+        button { padding: 0.7rem 2rem; margin: 0 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kérelem Generátor</h1>
+        <form id="requestForm">
+            <label>Szülő neve <input name="parentName" required value="Kovácsova Viktória"></label>
+            <label>Csoport <input name="group" required value="Pillangó"></label>
+            <label>Gyermek neve <input name="childName" required value="Nagy Péter"></label>
+            <label>Indok <input name="reason" required value="családi"></label>
+            <label>Kezdő dátum <input type="date" name="fromDate" required value="2025-09-10"></label>
+            <label>Vég dátum <input type="date" name="toDate" required value="2025-09-12"></label>
+            <label>Aláírás (rajzold le):</label>
+            <canvas id="signature" width="400" height="100"></canvas>
+            <button type="button" onclick="clearSignature()">Törlés</button>
+            <label>Export formátum
+                <select name="format">
+                    <option value="pdf">PDF</option>
+                    <option value="image">Kép (PNG)</option>
+                </select>
+            </label>
+            <div class="actions">
+                <button type="submit">Generálás</button>
+            </div>
+        </form>
+        <div id="result"></div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+    // Signature canvas logic
+    const canvas = document.getElementById('signature');
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#1a237e'; // ink-like color
+    ctx.lineWidth = 2;
+    let drawing = false;
+    canvas.addEventListener('mousedown', e => { drawing = true; ctx.beginPath(); });
+    canvas.addEventListener('mouseup', e => { drawing = false; });
+    canvas.addEventListener('mouseout', e => { drawing = false; });
+    canvas.addEventListener('mousemove', e => {
+        if (!drawing) return;
+        const rect = canvas.getBoundingClientRect();
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        ctx.stroke();
+    });
+    window.clearSignature = function() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    document.getElementById('requestForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const form = e.target;
+        const parentName = form.parentName.value;
+        const group = form.group.value;
+        const childName = form.childName.value;
+        const reason = form.reason.value;
+        const fromDate = form.fromDate.value;
+        const toDate = form.toDate.value;
+        const format = form.format.value;
+        // Get signature image
+        const signatureData = canvas.toDataURL('image/png');
+        // Compose document HTML
+    const docHtml = `
+    <div id="exportDoc" style="font-family: Arial; color: #222; width: 900px; padding: 75px 150px; background: #fff; box-sizing: border-box;">
+            <h2 style="text-align:center;">KÉRELEM</h2>
+            <p>Alulírott <b>${parentName}</b> (szülő neve) azzal a kéréssel fordulok a <b>${group}</b> csoport óvodapedagógusához, hogy a Nagybácsai Óvoda Kisbácsai Tagóvodájában jogviszonnyal rendelkező <b>${childName}</b> nevű gyermekem távolmaradását <b>${reason}</b> ok miatt, <b>${fromDate}</b>-tól <b>${toDate}</b>-ig engedélyezni szíveskedjen.</p>
+            <br><br>
+            <div style="display:flex; justify-content:space-between;">
+                <div>Győr,</div>
+                <div style="text-align:center;">
+                    <img src="${signatureData}" style="height:50px; border-bottom:1px solid #222; display:block; margin:auto;">
+                    <div>szülő aláírása</div>
+                </div>
+            </div>
+            <br><br>
+            <div>Távolmaradását engedélyezem:</div>
+            <div style="display:flex; justify-content:space-between; margin-top:2rem;">
+                <div>Győr,</div>
+                <div style="text-align:center; border-bottom:1px solid #222; width:200px;">&nbsp;<br>óvodapedagógus</div>
+            </div>
+        </div>`;
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = '';
+        const temp = document.createElement('div');
+        temp.style.position = 'fixed';
+        temp.style.left = '-9999px';
+        temp.innerHTML = docHtml;
+        document.body.appendChild(temp);
+        const exportDoc = temp.querySelector('#exportDoc');
+        const rect = exportDoc.getBoundingClientRect();
+        const exportWidth = Math.ceil(rect.width);
+        const exportHeight = Math.ceil(rect.height);
+        if (format === 'pdf') {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ unit: 'px', format: [exportWidth, exportHeight] });
+            await html2canvas(exportDoc, { scale: 2, width: exportWidth, height: exportHeight }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                pdf.addImage(imgData, 'PNG', 0, 0, exportWidth, exportHeight);
+                pdf.save('kerelem.pdf');
+            });
+        } else {
+            await html2canvas(exportDoc, { scale: 2, width: exportWidth, height: exportHeight }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = imgData;
+                link.download = 'kerelem.png';
+                link.click();
+            });
+        }
+        document.body.removeChild(temp);
+    }
+    </script>
+</body>
+</html>
