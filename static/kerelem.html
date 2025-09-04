@@ -117,7 +117,7 @@
             <label>Export formátum
                 <select name="format">
                     <option value="pdf">PDF</option>
-                    <option value="image">Kép (PNG)</option>
+                    <option value="image">Kép (JPEG)</option>
                 </select>
             </label>
             <div class="actions">
@@ -291,7 +291,7 @@
         const fromDateHu = formatDateHungarian(new Date(fromDate), true);
         const toDateHu = formatDateHungarian(new Date(toDate), true);
         // Get signature image
-        const signatureData = canvas.toDataURL('image/png');
+        const signatureData = canvas.toDataURL('image/png'); // Keep PNG for signature transparency
         localStorage.setItem('kerelem_signature', signatureData);
         // Compose document HTML
         const docHtml = `
@@ -345,9 +345,9 @@
                 window.open(pdfUrl, '_blank');
             });
         } else {
-            const fileName = `kerelem_${fromDate}_${toDate}.png`;
+            const fileName = `kerelem_${fromDate}_${toDate}.jpg`;
             await html2canvas(exportDoc, { scale: 2, width: exportWidth, height: exportHeight }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
+                const imgData = canvas.toDataURL('image/jpeg', 0.95); // JPEG with 95% quality
                 const link = document.createElement('a');
                 link.href = imgData;
                 link.download = fileName;
