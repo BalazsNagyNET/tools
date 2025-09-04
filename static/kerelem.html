@@ -76,6 +76,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
+    // Hungarian date formatting function
+    function formatDateHungarian(date, removeTrailingDot = false) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}. ${month}. ${day}${removeTrailingDot ? '' : '.'}`;
+    }
+    
     // Signature canvas logic with caching and smoothing
     const canvas = document.getElementById('signature');
     const ctx = canvas.getContext('2d');
@@ -208,8 +216,12 @@
         if (fromDate) {
             const d = new Date(fromDate);
             d.setDate(d.getDate() - 1);
-            onDate = d.toISOString().slice(0, 10);
+            onDate = formatDateHungarian(d);
         }
+        
+        // Format dates to Hungarian
+        const fromDateHu = formatDateHungarian(new Date(fromDate), true);
+        const toDateHu = formatDateHungarian(new Date(toDate), true);
         // Get signature image
         const signatureData = canvas.toDataURL('image/png');
         localStorage.setItem('kerelem_signature', signatureData);
@@ -217,7 +229,7 @@
         const docHtml = `
         <div id="exportDoc" style="font-family: Arial; color: #222; width: 900px; padding: 45px 150px 75px; background: #fff; box-sizing: border-box;">
             <h2 style="text-align:center;">KÉRELEM</h2>
-            <p>Alulírott <b>${parentName}</b> (szülő neve) azzal a kéréssel fordulok a <b>${group}</b> csoport óvodapedagógusához, hogy a Nagybácsai Óvoda Kisbácsai Tagóvodájában jogviszonnyal rendelkező <b>${childName}</b> nevű gyermekem távolmaradását <b>${reason}</b> ok miatt, <b>${fromDate}</b>-tól <b>${toDate}</b>-ig engedélyezni szíveskedjen.</p>
+            <p>Alulírott <b>${parentName}</b> (szülő neve) azzal a kéréssel fordulok a <b>${group}</b> csoport óvodapedagógusához, hogy a Nagybácsai Óvoda Kisbácsai Tagóvodájában jogviszonnyal rendelkező <b>${childName}</b> nevű gyermekem távolmaradását <b>${reason}</b> ok miatt, <b>${fromDateHu}</b>-tól <b>${toDateHu}</b>-ig engedélyezni szíveskedjen.</p>
             <br><br>
             <div style="display:flex; justify-content:space-between;">
                 <div>Győr, <b>${onDate}</b></div>
