@@ -204,9 +204,9 @@
         localStorage.removeItem('kerelem_signature');
     }
 
-    // Cache form values on change
+    // Cache form values on change (except dates)
     const form = document.getElementById('requestForm');
-    ['parentName','group','childName','reason','fromDate','toDate'].forEach(name => {
+    ['parentName','group','childName','reason'].forEach(name => {
         const input = form[name];
         input.value = localStorage.getItem('kerelem_' + name) || '';
         input.addEventListener('input', () => {
