@@ -214,13 +214,14 @@
         });
     });
 
-    // Ensure toDate is >= fromDate when fromDate changes
+    // Auto-fill toDate when fromDate changes
     form.fromDate.addEventListener('change', () => {
         const fromDate = form.fromDate.value;
         const toDate = form.toDate.value;
-        if (fromDate && toDate && toDate < fromDate) {
+        
+        // Only auto-fill if toDate is empty
+        if (fromDate && !toDate) {
             form.toDate.value = fromDate;
-            localStorage.setItem('kerelem_toDate', fromDate);
         }
     });
 
