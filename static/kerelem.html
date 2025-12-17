@@ -320,20 +320,20 @@
             const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: 'a4' });
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
-            await html2canvas(exportDoc, { scale: 2, width: exportWidth, height: exportHeight }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
+            await html2canvas(exportDoc, { scale: 1.5, width: exportWidth, height: exportHeight }).then(canvas => {
+                const imgData = canvas.toDataURL('image/jpeg', 0.85); // Use JPEG with 85% quality for smaller size
                 // Calculate scale to fit image to page
                 const scale = Math.min(pageWidth / exportWidth, pageHeight / exportHeight);
                 const imgW = exportWidth * scale;
                 const imgH = exportHeight * scale;
                 const x = (pageWidth - imgW) / 2;
                 const y = (pageHeight - imgH) / 2;
-                pdf.addImage(imgData, 'PNG', x, y, imgW, imgH);
+                pdf.addImage(imgData, 'JPEG', x, y, imgW, imgH);
                 pdf.save(`${fileNameBase}.pdf`);
             });
         } else {
-            await html2canvas(exportDoc, { scale: 2, width: exportWidth, height: exportHeight }).then(canvas => {
-                const imgData = canvas.toDataURL('image/jpeg', 0.95); // JPEG with 95% quality
+            await html2canvas(exportDoc, { scale: 1.5, width: exportWidth, height: exportHeight }).then(canvas => {
+                const imgData = canvas.toDataURL('image/jpeg', 0.85); // JPEG with 85% quality
                 const link = document.createElement('a');
                 link.href = imgData;
                 link.download = `${fileNameBase}.jpg`;
