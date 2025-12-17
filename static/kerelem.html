@@ -7,24 +7,83 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #f4f4f4;
+            background: #f4f4f4; /* DEFAULT: #f4f4f4 | DECEMBER: #2d5016 */
             margin: 0;
             padding: 0;
+            overflow-x: hidden;
         }
 
         .container {
             width: 80vw;
             max-width: 900px;
             margin: 2rem auto;
-            background: #fff;
+            background: #fff; /* DEFAULT: #fff | DECEMBER: #c41e3a */
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
+            color: #000; /* DEFAULT: #000 | DECEMBER: #fff */
         }
 
         h1 {
             text-align: center;
         }
+
+        /* ==================== DECEMBER EASTER EGGS - START ==================== */
+        
+        .santa-hat {
+            display: none;
+            font-size: 0.6em;
+            margin-left: 0.3em;
+            vertical-align: middle;
+        }
+
+        .snowflake {
+            position: fixed;
+            top: -10px;
+            z-index: 9999;
+            user-select: none;
+            cursor: default;
+            animation-name: snowfall;
+            animation-duration: 10s;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+            opacity: 0.7;
+            color: #a8d8ff;
+            font-size: 1em;
+            pointer-events: none;
+            text-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
+        }
+
+        @keyframes snowfall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0.6;
+            }
+        }
+
+        .snowflake:nth-of-type(2n) {
+            animation-duration: 12s;
+        }
+
+        .snowflake:nth-of-type(3n) {
+            animation-duration: 8s;
+        }
+
+        .snowflake:nth-of-type(4n) {
+            font-size: 1.2em;
+        }
+
+        .snowflake:nth-of-type(5n) {
+            font-size: 0.8em;
+        }
+
+        /* ==================== DECEMBER EASTER EGGS - END ==================== */
 
         label {
             display: block;
@@ -78,7 +137,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Kérelem Generátor</h1>
+        <h1>Kérelem Generátor<span class="santa-hat">🎅</span></h1>
         <form id="requestForm">
             <label>Szülő neve <input name="parentName" required></label>
             <label>Csoport <input name="group" required></label>
@@ -105,6 +164,37 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
+    // ==================== DECEMBER EASTER EGGS - START ====================
+    (function() {
+        const currentMonth = new Date().getMonth();
+        if (currentMonth === 11) { // December is month 11 (0-indexed)
+            // Apply Christmas colors
+            document.body.style.background = '#2d5016'; // Dark green
+            const container = document.querySelector('.container');
+            if (container) {
+                container.style.background = '#c41e3a'; // Christmas red
+                container.style.color = '#fff'; // White text
+            }
+            
+            // Show Santa hat
+            const santaHat = document.querySelector('.santa-hat');
+            if (santaHat) santaHat.style.display = 'inline';
+            
+            // Create snowflakes
+            const snowflakeCount = 30;
+            for (let i = 0; i < snowflakeCount; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.classList.add('snowflake');
+                snowflake.innerHTML = '❄';
+                snowflake.style.left = Math.random() * 100 + '%';
+                snowflake.style.animationDelay = Math.random() * 10 + 's';
+                snowflake.style.animationDuration = (Math.random() * 5 + 8) + 's';
+                document.body.appendChild(snowflake);
+            }
+        }
+    })();
+    // ==================== DECEMBER EASTER EGGS - END ====================
+
     // Hungarian date formatting function
     function formatDateHungarian(date, removeTrailingDot = false) {
         const year = date.getFullYear();
