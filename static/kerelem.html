@@ -214,6 +214,16 @@
         });
     });
 
+    // Ensure toDate is >= fromDate when fromDate changes
+    form.fromDate.addEventListener('change', () => {
+        const fromDate = form.fromDate.value;
+        const toDate = form.toDate.value;
+        if (fromDate && toDate && toDate < fromDate) {
+            form.toDate.value = fromDate;
+            localStorage.setItem('kerelem_toDate', fromDate);
+        }
+    });
+
     // Cache preferred download type
     const formatSelect = form.format;
     formatSelect.value = localStorage.getItem('kerelem_format') || 'pdf';
