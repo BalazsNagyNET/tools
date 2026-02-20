@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Stitching Thread Length Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 80vw;
+            max-width: 900px;
+            margin: 2rem auto;
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-top: 1rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.5rem;
+            margin-top: 0.3rem;
+            box-sizing: border-box;
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: #777;
+            margin-top: 0.2rem;
+        }
+
+        .actions {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        button {
+            padding: 0.7rem 2rem;
+            margin: 0 0.5rem;
+        }
+
+        #result {
+            margin-top: 2rem;
+        }
+
+        #result .result-single {
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 1rem;
+            background: #e8f5e9;
+            border-radius: 6px;
+            color: #2e7d32;
+        }
+
+        #result table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+        }
+
+        #result table th,
+        #result table td {
+            border: 1px solid #ddd;
+            padding: 0.6rem 1rem;
+            text-align: center;
+        }
+
+        #result table th {
+            background: #1565c0;
+            color: #fff;
+        }
+
+        #result table tr:nth-child(even) {
+            background: #f0f4ff;
+        }
+
+        #validationMsg {
+            color: red;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                max-width: 90vw;
+                padding: 0.5rem;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            h1 {
+                font-size: 1.3rem;
+            }
+
+            label {
+                font-size: 1rem;
+                margin-top: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hand Stitching Thread Length Calculator</h1>
+        <form id="calcForm">
+            <label>
+                Seam length (cm)
+                <input type="number" name="seamLength" min="0.1" step="0.1" placeholder="e.g. 15" required>
+            </label>
+            <label>
+                Leather thickness (mm)
+                <input type="number" name="thickness" min="0.1" step="0.1" placeholder="e.g. 3">
+                <span class="hint">Leave empty to use 0 mm (flat material).</span>
+            </label>
+            <label>
+                Stitch length (mm)
+                <input type="number" name="stitchLength" min="0.1" step="0.1" placeholder="e.g. 3.5">
+                <span class="hint">Leave empty to calculate for 2–5 mm range in 0.5 mm steps.</span>
+            </label>
+            <div id="validationMsg"></div>
+            <div class="actions">
+                <button type="submit">Calculate</button>
+                <button type="reset">Reset</button>
+            </div>
+        </form>
+        <div id="result"></div>
+    </div>
+    <script>
+    function calculateThreadLength(seamLength, stitchLength, thickness) {
+        return (seamLength * 10 / stitchLength) * (2 * thickness + 2 * stitchLength) + 180;
+    }
+
+    const form = document.getElementById('calcForm');
+
+    form.addEventListener('reset', () => {
+        document.getElementById('validationMsg').textContent = '';
+        document.getElementById('result').innerHTML = '';
+    });
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const seamLengthVal = form.seamLength.value.trim();
+        const thicknessVal = form.thickness.value.trim();
+        const stitchLengthVal = form.stitchLength.value.trim();
+
+        const seamLength = parseFloat(seamLengthVal);
+        const thickness = thicknessVal !== '' ? parseFloat(thicknessVal) : 0;
+        const msgEl = document.getElementById('validationMsg');
+        const resultEl = document.getElementById('result');
+
+        if (!seamLengthVal || isNaN(seamLength) || seamLength <= 0) {
+            msgEl.textContent = 'Please enter a valid seam length greater than 0.';
+            resultEl.innerHTML = '';
+            return;
+        }
+        if (thicknessVal !== '' && (isNaN(thickness) || thickness < 0)) {
+            msgEl.textContent = 'Please enter a valid leather thickness (0 or greater).';
+            resultEl.innerHTML = '';
+            return;
+        }
+        msgEl.textContent = '';
+
+        if (stitchLengthVal !== '') {
+            const stitchLength = parseFloat(stitchLengthVal);
+            if (isNaN(stitchLength) || stitchLength <= 0) {
+                msgEl.textContent = 'Please enter a valid stitch length greater than 0.';
+                resultEl.innerHTML = '';
+                return;
+            }
+            const threadLengthMm = calculateThreadLength(seamLength, stitchLength, thickness);
+            const threadLengthCm = threadLengthMm / 10;
+            resultEl.innerHTML = `<div class="result-single">Thread length needed: ${threadLengthCm.toFixed(2)} cm</div>`;
+        } else {
+            let rows = '';
+            for (let s = 20; s <= 50; s += 5) {
+                const stitchLength = s / 10;
+                const threadLengthMm = calculateThreadLength(seamLength, stitchLength, thickness);
+                const threadLengthCm = threadLengthMm / 10;
+                rows += `<tr><td>${stitchLength.toFixed(1)} mm</td><td>${threadLengthCm.toFixed(2)} cm</td></tr>`;
+            }
+            resultEl.innerHTML = `
+                <table>
+                    <thead>
+                        <tr><th>Stitch Length</th><th>Thread Length Needed</th></tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>`;
+        }
+    });
+    </script>
+</body>
+</html>
