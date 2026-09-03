@@ -117,6 +117,28 @@
             margin: 0 0.5rem;
         }
 
+        /* Invisible but focusable field so the calendar/signature hook into native
+           form validation ("required" bubble, red outline) like any other field */
+        .calendar-validator-input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: 0;
+            border: none;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .signature-wrapper {
+            position: relative;
+        }
+
+        .signature-wrapper.calendar-invalid canvas {
+            border-color: #d32f2f;
+            box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.3);
+        }
+
         .calendar-popup {
             background: #fff;
             border: 1px solid #ddd;
@@ -126,6 +148,11 @@
             width: 280px;
             margin-top: 0.5rem;
             color: #000;
+        }
+
+        .date-range-wrapper.calendar-invalid .calendar-popup {
+            border-color: #d32f2f;
+            box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.3);
         }
 
         .calendar-nav {
@@ -252,7 +279,8 @@
             <label>Indok <input name="reason" required></label>
             <small id="reasonPreview" style="display:block; color:#666; margin-top:0.2rem;"></small>
             <div class="form-section-label">Időszak</div>
-            <div class="date-range-wrapper">
+            <div class="date-range-wrapper" id="dateRangeWrapper">
+                <input type="text" name="fromDate" id="fromDateValidator" class="calendar-validator-input" required>
                 <div class="calendar-popup" id="calendarPopup">
                     <div class="calendar-nav">
                         <button type="button" id="calPrevBtn" aria-label="Előző hónap">‹</button>
@@ -266,10 +294,12 @@
                 </div>
             </div>
             <small id="dateRangeSummary" style="display:block; color:#666; margin-top:0.4rem;"></small>
-            <input type="hidden" name="fromDate">
             <input type="hidden" name="toDate">
             <label>Aláírás (rajzold le):</label>
-            <canvas id="signature" width="280" height="150"></canvas>
+            <div class="signature-wrapper" id="signatureWrapper">
+                <input type="text" name="signature" id="signatureValidator" class="calendar-validator-input" required>
+                <canvas id="signature" width="280" height="150"></canvas>
+            </div>
             <button type="button" onclick="clearSignature()">Törlés</button>
             <label>Export formátum
                 <select name="format">
@@ -333,12 +363,29 @@
     ctx.lineWidth = 2;
     let drawing = false;
     let points = [];
+
+    // Hook the invisible signature field into native form validation,
+    // same as the calendar's fromDate field
+    const signatureWrapper = document.getElementById('signatureWrapper');
+    const signatureValidator = document.getElementById('signatureValidator');
+    function markSignatureValid() {
+        signatureValidator.value = 'signed';
+        signatureValidator.setCustomValidity('');
+        signatureWrapper.classList.remove('calendar-invalid');
+    }
+    signatureValidator.addEventListener('invalid', () => {
+        signatureValidator.setCustomValidity('Kérjük, rajzolja le az aláírást!');
+        signatureWrapper.classList.add('calendar-invalid');
+        canvas.scrollIntoView({ block: 'center' });
+    });
+
     // Load cached signature if exists
     const cachedSignature = localStorage.getItem('kerelem_signature');
     if (cachedSignature) {
         const img = new window.Image();
         img.onload = function() { ctx.drawImage(img, 0, 0); };
         img.src = cachedSignature;
+        markSignatureValid();
     }
     function getPos(e) {
         const rect = canvas.getBoundingClientRect();
@@ -384,11 +431,13 @@
     canvas.addEventListener('mouseup', e => {
         drawing = false;
         localStorage.setItem('kerelem_signature', canvas.toDataURL('image/png'));
+        markSignatureValid();
     });
     canvas.addEventListener('touchend', e => {
         e.preventDefault(); // Prevent default touch behavior
         drawing = false;
         localStorage.setItem('kerelem_signature', canvas.toDataURL('image/png'));
+        markSignatureValid();
     });
     canvas.addEventListener('mousemove', e => {
         if (!drawing) return;
@@ -415,6 +464,7 @@
     window.clearSignature = function() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         localStorage.removeItem('kerelem_signature');
+        signatureValidator.value = '';
     }
 
     // Cache form values on change (except dates)
@@ -437,6 +487,7 @@
     updateReasonPreview();
 
     // ---- Airbnb-style date range picker ----
+    const dateRangeWrapper = document.getElementById('dateRangeWrapper');
     const dateRangeSummary = document.getElementById('dateRangeSummary');
     const calendarPopup = document.getElementById('calendarPopup');
     const calendarGrid = document.getElementById('calendarGrid');
@@ -471,6 +522,9 @@
         } else {
             dateRangeSummary.textContent = 'Válasszon kezdő dátumot';
         }
+        // Re-run native validation now that the value changed (clears the required error/red outline)
+        form.fromDate.setCustomValidity('');
+        dateRangeWrapper.classList.remove('calendar-invalid');
     }
 
     function renderCalendar() {
@@ -518,6 +572,14 @@
 
     calPrevBtn.addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() - 1); renderCalendar(); });
     calNextBtn.addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() + 1); renderCalendar(); });
+
+    // Hook the invisible fromDate field into native form validation, so an
+    // empty selection behaves like any other required field (bubble + focus)
+    form.fromDate.addEventListener('invalid', () => {
+        form.fromDate.setCustomValidity('Válasszon legalább egy dátumot!');
+        dateRangeWrapper.classList.add('calendar-invalid');
+        calendarPopup.scrollIntoView({ block: 'center' });
+    });
 
     updateHiddenFieldsAndDisplay();
     renderCalendar();
