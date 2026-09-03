@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kérelem Generátor</title>
+    <title>Kérelem Generáló</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #f4f4f4; /* DEFAULT: #f4f4f4 | DECEMBER: #2d5016 */
+            background: #f4f4f4; /* overridden per season, see SEASONAL EASTER EGGS below */
             margin: 0;
             padding: 0;
             overflow-x: hidden;
@@ -17,21 +17,23 @@
             width: 80vw;
             max-width: 900px;
             margin: 2rem auto;
-            background: #fff; /* DEFAULT: #fff | DECEMBER: #c41e3a */
+            background: #fff; /* overridden per season, see SEASONAL EASTER EGGS below */
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             position: relative;
             z-index: 1;
-            color: #000; /* DEFAULT: #000 | DECEMBER: #fff */
+            color: #000; /* overridden per season, see SEASONAL EASTER EGGS below */
         }
 
         h1 {
             text-align: center;
         }
 
-        /* ==================== DECEMBER EASTER EGGS - START ==================== */
-        
+        /* ==================== SEASONAL EASTER EGGS - START ==================== */
+        /* One shared falling-particle look, reused by all four season themes;
+           only the colors/emojis differ (set from JS). */
+
         .santa-hat {
             display: none;
             font-size: 0.6em;
@@ -39,27 +41,25 @@
             vertical-align: middle;
         }
 
-        .snowflake {
+        .season-particle {
             position: fixed;
             top: -10px;
             z-index: 9999;
             user-select: none;
             cursor: default;
-            animation-name: snowfall;
+            animation-name: particlefall;
             animation-duration: 10s;
             animation-timing-function: linear;
             animation-iteration-count: infinite;
-            opacity: 0.7;
-            color: #a8d8ff;
+            opacity: 0.8;
             font-size: 1em;
             pointer-events: none;
-            text-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
         }
 
-        @keyframes snowfall {
+        @keyframes particlefall {
             0% {
                 transform: translateY(0) rotate(0deg);
-                opacity: 0.8;
+                opacity: 0.9;
             }
             100% {
                 transform: translateY(100vh) rotate(360deg);
@@ -67,23 +67,45 @@
             }
         }
 
-        .snowflake:nth-of-type(2n) {
+        .season-particle:nth-of-type(2n) {
             animation-duration: 12s;
         }
 
-        .snowflake:nth-of-type(3n) {
+        .season-particle:nth-of-type(3n) {
             animation-duration: 8s;
         }
 
-        .snowflake:nth-of-type(4n) {
+        .season-particle:nth-of-type(4n) {
             font-size: 1.2em;
         }
 
-        .snowflake:nth-of-type(5n) {
+        .season-particle:nth-of-type(5n) {
             font-size: 0.8em;
         }
 
-        /* ==================== DECEMBER EASTER EGGS - END ==================== */
+        .eggs-toggle-btn {
+            position: absolute;
+            top: 0.6rem;
+            right: 0.6rem;
+            z-index: 2;
+            background: none;
+            border: 1px solid currentColor;
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            padding: 0;
+            margin: 0;
+            font-size: 1rem;
+            line-height: 1;
+            cursor: pointer;
+            opacity: 0.6;
+        }
+
+        .eggs-toggle-btn:hover {
+            opacity: 1;
+        }
+
+        /* ==================== SEASONAL EASTER EGGS - END ==================== */
 
         label,
         .form-section-label {
@@ -296,7 +318,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>Kérelem Generátor<span class="santa-hat">🎅</span></h1>
+        <button type="button" id="eggsToggleBtn" class="eggs-toggle-btn"></button>
+        <h1>Kérelem Generáló<span class="santa-hat">🎅</span></h1>
         <div class="update-notice" id="updateNotice">
             <button type="button" class="update-notice-close" id="updateNoticeClose" aria-label="Bezárás">×</button>
             Sziasztok, kicsit módosítottam a formátumon, alulról eltűntetem a felesleges óvónői aláírást, elektronikusan ugysem fogja senki aláírni. Mostantól ovit is kell választani. A dátum választó pedig talán kicsit használhatóbb lett. Ha valami nem működne jól, kérlek jelezzétek.
@@ -352,36 +375,75 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
-    // ==================== DECEMBER EASTER EGGS - START ====================
+    // ==================== SEASONAL EASTER EGGS - START ====================
     (function() {
-        const currentMonth = new Date().getMonth();
-        if (currentMonth === 11) { // December is month 11 (0-indexed)
-            // Apply Christmas colors
-            document.body.style.background = '#2d5016'; // Dark green
-            const container = document.querySelector('.container');
+        // Same particle-fall gimmick year-round; only colors/emojis change per season.
+        const SEASONS = [
+            { months: [11, 0, 1], bodyBg: '#2d5016', containerBg: '#c41e3a', textColor: '#fff', emojis: ['❄'], showSantaHat: true }, // Winter
+            { months: [2, 3, 4], bodyBg: '#7cb342', containerBg: '#fff0f5', textColor: '#4a148c', emojis: ['🌸', '🌷', '🦋'] }, // Spring
+            { months: [5, 6, 7], bodyBg: '#0288d1', containerBg: '#fff9e6', textColor: '#e65100', emojis: ['☀️', '🌻', '🍉'] }, // Summer
+            { months: [8, 9, 10], bodyBg: '#4a2f1a', containerBg: '#fff3e0', textColor: '#5d3a1a', emojis: ['🍁', '🍂', '🍃'] }, // Fall
+        ];
+        const EGGS_DISABLED_KEY = 'kerelem_eggs_disabled';
+        const container = document.querySelector('.container');
+        const santaHat = document.querySelector('.santa-hat');
+        const toggleBtn = document.getElementById('eggsToggleBtn');
+        const currentSeason = SEASONS.find(s => s.months.includes(new Date().getMonth()));
+
+        function applyEasterEggs() {
+            if (!currentSeason) return;
+            document.body.style.background = currentSeason.bodyBg;
             if (container) {
-                container.style.background = '#c41e3a'; // Christmas red
-                container.style.color = '#fff'; // White text
+                container.style.background = currentSeason.containerBg;
+                container.style.color = currentSeason.textColor;
             }
-            
-            // Show Santa hat
-            const santaHat = document.querySelector('.santa-hat');
-            if (santaHat) santaHat.style.display = 'inline';
-            
-            // Create snowflakes
-            const snowflakeCount = 30;
-            for (let i = 0; i < snowflakeCount; i++) {
-                const snowflake = document.createElement('div');
-                snowflake.classList.add('snowflake');
-                snowflake.innerHTML = '❄';
-                snowflake.style.left = Math.random() * 100 + '%';
-                snowflake.style.animationDelay = Math.random() * 10 + 's';
-                snowflake.style.animationDuration = (Math.random() * 5 + 8) + 's';
-                document.body.appendChild(snowflake);
+            if (currentSeason.showSantaHat && santaHat) santaHat.style.display = 'inline';
+
+            const particleCount = 25;
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('season-particle');
+                particle.innerHTML = currentSeason.emojis[i % currentSeason.emojis.length];
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 10 + 's';
+                particle.style.animationDuration = (Math.random() * 5 + 8) + 's';
+                document.body.appendChild(particle);
             }
         }
+
+        function removeEasterEggs() {
+            document.body.style.background = '';
+            if (container) {
+                container.style.background = '';
+                container.style.color = '';
+            }
+            if (santaHat) santaHat.style.display = 'none';
+            document.querySelectorAll('.season-particle').forEach(p => p.remove());
+        }
+
+        function updateToggleBtn(disabled) {
+            toggleBtn.textContent = disabled ? '🙈' : '🎉';
+            toggleBtn.title = disabled ? 'Szezonális dekoráció bekapcsolása' : 'Szezonális dekoráció kikapcsolása';
+        }
+
+        const disabled = localStorage.getItem(EGGS_DISABLED_KEY) === '1';
+        if (!disabled) applyEasterEggs();
+        updateToggleBtn(disabled);
+
+        toggleBtn.addEventListener('click', () => {
+            const nowDisabled = localStorage.getItem(EGGS_DISABLED_KEY) === '1';
+            if (nowDisabled) {
+                localStorage.removeItem(EGGS_DISABLED_KEY);
+                applyEasterEggs();
+                updateToggleBtn(false);
+            } else {
+                localStorage.setItem(EGGS_DISABLED_KEY, '1');
+                removeEasterEggs();
+                updateToggleBtn(true);
+            }
+        });
     })();
-    // ==================== DECEMBER EASTER EGGS - END ====================
+    // ==================== SEASONAL EASTER EGGS - END ====================
 
     // One-time update notice, shown for a month unless already dismissed
     (function() {
