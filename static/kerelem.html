@@ -714,8 +714,8 @@
         const exportWidth = Math.ceil(rect.width);
         const exportHeight = Math.ceil(rect.height);
         
-        // Generate consistent filename base
-        const fileNameBase = `kerelem_${fromDate}_${toDate}`;
+        // Generate consistent filename base — single date only for a one-day request
+        const fileNameBase = fromDate === toDate ? `kerelem_${fromDate}` : `kerelem_${fromDate}_${toDate}`;
         
         if (format === 'pdf') {
             const { jsPDF } = window.jspdf;
