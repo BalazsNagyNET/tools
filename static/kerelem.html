@@ -85,7 +85,8 @@
 
         /* ==================== DECEMBER EASTER EGGS - END ==================== */
 
-        label {
+        label,
+        .form-section-label {
             display: block;
             margin-top: 1rem;
         }
@@ -116,6 +117,106 @@
             margin: 0 0.5rem;
         }
 
+        .calendar-popup {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            width: 280px;
+            margin-top: 0.5rem;
+            color: #000;
+        }
+
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .calendar-nav button {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0.3rem 0.7rem;
+            border-radius: 50%;
+        }
+
+        .calendar-nav button:hover {
+            background: #f0f0f0;
+        }
+
+        .calendar-month-label {
+            font-weight: 600;
+        }
+
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 0.3rem;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+        }
+
+        .calendar-day {
+            text-align: center;
+            padding: 0.45rem 0;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .calendar-day:hover {
+            background: #f0f0f0;
+        }
+
+        .calendar-day-empty {
+            cursor: default;
+        }
+
+        .calendar-day.calendar-today {
+            font-weight: 700;
+            text-decoration: underline;
+        }
+
+        /* Continuous highlighted band between the selected start and end day */
+        .calendar-day.range-mid {
+            background: #ffe1e8;
+            border-radius: 0;
+        }
+
+        .calendar-day.range-start {
+            background: #e00b41;
+            color: #fff;
+            border-radius: 15% 0 0 15%;
+        }
+
+        .calendar-day.range-end {
+            background: #e00b41;
+            color: #fff;
+            border-radius: 0 15% 15% 0;
+        }
+
+        /* Single selected day (no range yet) stays a full circle */
+        .calendar-day.range-single {
+            background: #e00b41;
+            color: #fff;
+            border-radius: 15%;
+        }
+
+        .calendar-day.range-start.range-end {
+            border-radius: 15%;
+        }
+
         @media (max-width: 600px) {
             .container {
                 max-width: 90vw;
@@ -140,11 +241,33 @@
         <h1>Kérelem Generátor<span class="santa-hat">🎅</span></h1>
         <form id="requestForm">
             <label>Szülő neve <input name="parentName" required></label>
+            <label>Óvoda
+                <select name="preschool" required>
+                    <option value="Nagybácsai Óvoda Kisbácsai Tagóvodájában">Nagybácsai Óvoda Kisbácsai Tagóvodája</option>
+                    <option value="Nagybácsia Óvoda Bóbita Tagóvodájában">Nagybácsia Óvoda Bóbita Tagóvodája</option>
+                </select>
+            </label>
             <label>Csoport <input name="group" required></label>
             <label>Gyermek neve <input name="childName" required></label>
             <label>Indok <input name="reason" required></label>
-            <label>Kezdő dátum <input type="date" name="fromDate" required></label>
-            <label>Vég dátum <input type="date" name="toDate" required></label>
+            <small id="reasonPreview" style="display:block; color:#666; margin-top:0.2rem;"></small>
+            <div class="form-section-label">Időszak</div>
+            <div class="date-range-wrapper">
+                <div class="calendar-popup" id="calendarPopup">
+                    <div class="calendar-nav">
+                        <button type="button" id="calPrevBtn" aria-label="Előző hónap">‹</button>
+                        <div class="calendar-month-label" id="calMonthLabel"></div>
+                        <button type="button" id="calNextBtn" aria-label="Következő hónap">›</button>
+                    </div>
+                    <div class="calendar-weekdays">
+                        <span>H</span><span>K</span><span>Sz</span><span>Cs</span><span>P</span><span>Szo</span><span>V</span>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                </div>
+            </div>
+            <small id="dateRangeSummary" style="display:block; color:#666; margin-top:0.4rem;"></small>
+            <input type="hidden" name="fromDate">
+            <input type="hidden" name="toDate">
             <label>Aláírás (rajzold le):</label>
             <canvas id="signature" width="280" height="150"></canvas>
             <button type="button" onclick="clearSignature()">Törlés</button>
@@ -296,7 +419,7 @@
 
     // Cache form values on change (except dates)
     const form = document.getElementById('requestForm');
-    ['parentName','group','childName','reason'].forEach(name => {
+    ['parentName','preschool','group','childName','reason'].forEach(name => {
         const input = form[name];
         input.value = localStorage.getItem('kerelem_' + name) || '';
         input.addEventListener('input', () => {
@@ -304,16 +427,100 @@
         });
     });
 
-    // Auto-fill toDate when fromDate changes
-    form.fromDate.addEventListener('change', () => {
-        const fromDate = form.fromDate.value;
-        const toDate = form.toDate.value;
-        
-        // Only auto-fill if toDate is empty
-        if (fromDate && !toDate) {
-            form.toDate.value = fromDate;
+    // Live preview of how the reason will appear in the document
+    const reasonPreview = document.getElementById('reasonPreview');
+    function updateReasonPreview() {
+        const reason = form.reason.value.trim();
+        reasonPreview.textContent = reason ? `Előnézet: „${reason} ok miatt”` : '';
+    }
+    form.reason.addEventListener('input', updateReasonPreview);
+    updateReasonPreview();
+
+    // ---- Airbnb-style date range picker ----
+    const dateRangeSummary = document.getElementById('dateRangeSummary');
+    const calendarPopup = document.getElementById('calendarPopup');
+    const calendarGrid = document.getElementById('calendarGrid');
+    const calMonthLabel = document.getElementById('calMonthLabel');
+    const calPrevBtn = document.getElementById('calPrevBtn');
+    const calNextBtn = document.getElementById('calNextBtn');
+    const MONTH_NAMES = ['Január', 'Február', 'Március', 'Április', 'Május', 'Június', 'Július', 'Augusztus', 'Szeptember', 'Október', 'November', 'December'];
+
+    let rangeStart = null;
+    let rangeEnd = null;
+    let viewDate = new Date();
+    viewDate.setDate(1);
+
+    function toISODate(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+    function sameDay(a, b) {
+        return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    }
+
+    function updateHiddenFieldsAndDisplay() {
+        // A lone start day is a valid single-day request — mirror it into toDate too
+        form.fromDate.value = rangeStart ? toISODate(rangeStart) : '';
+        form.toDate.value = rangeEnd ? toISODate(rangeEnd) : (rangeStart ? toISODate(rangeStart) : '');
+        if (rangeStart && rangeEnd) {
+            dateRangeSummary.textContent = `Kiválasztva: ${formatDateHungarian(rangeStart, true)} - ${formatDateHungarian(rangeEnd, true)}`;
+        } else if (rangeStart) {
+            dateRangeSummary.textContent = `Kiválasztva: ${formatDateHungarian(rangeStart, true)} (1 nap)`;
+        } else {
+            dateRangeSummary.textContent = 'Válasszon kezdő dátumot';
         }
-    });
+    }
+
+    function renderCalendar() {
+        calMonthLabel.textContent = `${viewDate.getFullYear()}. ${MONTH_NAMES[viewDate.getMonth()]}`;
+        calendarGrid.innerHTML = '';
+        const firstOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+        const startOffset = (firstOfMonth.getDay() + 6) % 7; // Monday-based grid
+        const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
+        const today = new Date();
+
+        for (let i = 0; i < startOffset; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'calendar-day calendar-day-empty';
+            calendarGrid.appendChild(empty);
+        }
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
+            const cell = document.createElement('div');
+            cell.className = 'calendar-day';
+            cell.textContent = day;
+            if (sameDay(date, today)) cell.classList.add('calendar-today');
+            if (rangeStart && rangeEnd && date > rangeStart && date < rangeEnd) cell.classList.add('range-mid');
+            if (rangeStart && sameDay(date, rangeStart)) cell.classList.add(rangeEnd ? 'range-start' : 'range-single');
+            if (rangeEnd && sameDay(date, rangeEnd)) cell.classList.add('range-end');
+            cell.addEventListener('click', () => selectDate(date));
+            calendarGrid.appendChild(cell);
+        }
+    }
+
+    function selectDate(date) {
+        if (!rangeStart || (rangeStart && rangeEnd)) {
+            // Start a new range
+            rangeStart = date;
+            rangeEnd = null;
+        } else if (date < rangeStart) {
+            // Picked an earlier date second — becomes the new start
+            rangeEnd = rangeStart;
+            rangeStart = date;
+        } else {
+            rangeEnd = date;
+        }
+        updateHiddenFieldsAndDisplay();
+        renderCalendar();
+    }
+
+    calPrevBtn.addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() - 1); renderCalendar(); });
+    calNextBtn.addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() + 1); renderCalendar(); });
+
+    updateHiddenFieldsAndDisplay();
+    renderCalendar();
 
     // Cache preferred download type
     const formatSelect = form.format;
@@ -334,6 +541,7 @@
         e.preventDefault();
         // Validation
         const parentName = form.parentName.value.trim();
+        const preschool = form.preschool.value;
         const group = form.group.value.trim();
         const childName = form.childName.value.trim();
         const reason = form.reason.value.trim();
@@ -342,7 +550,7 @@
         const format = form.format.value;
         let valid = true;
         let msg = '';
-        if (!parentName || !group || !childName || !reason || !fromDate || !toDate) {
+        if (!parentName || !preschool || !group || !childName || !reason || !fromDate || !toDate) {
             valid = false;
             msg = 'Minden mező kitöltése kötelező!';
         } else if (toDate < fromDate) {
@@ -371,9 +579,9 @@
         localStorage.setItem('kerelem_signature', signatureData);
         // Compose document HTML
         const docHtml = `
-        <div id="exportDoc" style="font-family: Arial; color: #222; width: 900px; padding: 45px 150px 75px; background: #fff; box-sizing: border-box;">
-            <h2 style="text-align:center;">KÉRELEM</h2>
-            <p>Alulírott <b>${parentName}</b> (szülő neve) azzal a kéréssel fordulok a <b>${group}</b> csoport óvodapedagógusához, hogy a Nagybácsai Óvoda Kisbácsai Tagóvodájában jogviszonnyal rendelkező <b>${childName}</b> nevű gyermekem távolmaradását <b>${reason}</b> ok miatt, <b>${fromDateHu}</b>-tól <b>${toDateHu}</b>-ig engedélyezni szíveskedjen.</p>
+        <div id="exportDoc" style="font-family: 'Times New Roman', Times, serif; color: #222; width: 900px; padding: 45px 150px; background: #fff; box-sizing: border-box;">
+            <h2 style="text-align:center;">Kérelem</h2>
+            <p>Alulírott <b>${parentName}</b> szülő azzal a kéréssel fordulok a(z) <b>${group}</b> csoport óvodapedagógusához, hogy a <b>${preschool}</b> jogviszonnyal rendelkező <b>${childName}</b> nevű gyermekem távolmaradását az óvodából <b>${reason}</b> ok miatt, <b>${fromDateHu}</b>-tól <b>${toDateHu}</b>-ig engedélyezni szíveskedjen.</p>
             <br><br>
             <div style="display:flex; justify-content:space-between;">
                 <div>Győr, <b>${onDate}</b></div>
@@ -381,12 +589,6 @@
                     <img src="${signatureData}" style="height:50px; display:block; margin:auto;">
                     <div style="text-align:center; border-top:2px dotted #222; width:200px; padding-top:20px;">szülő aláírása</div>
                 </div>
-            </div>
-            <br><br>
-            <div>Távolmaradását engedélyezem:</div>
-            <div style="display:flex; justify-content:space-between; margin-top:2rem;">
-                <div>Győr,</div>
-                <div style="text-align:center; border-top:2px dotted #222; width:200px; padding-top:20px;">óvodapedagógus</div>
             </div>
         </div>`;
         const resultDiv = document.getElementById('result');
@@ -406,19 +608,11 @@
         
         if (format === 'pdf') {
             const { jsPDF } = window.jspdf;
-            // Use A4 landscape
-            const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: 'a4' });
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
+            // Page size follows content, so a shorter document yields a shorter page
+            const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [exportWidth, exportHeight] });
             await html2canvas(exportDoc, { scale: 1.5, width: exportWidth, height: exportHeight }).then(canvas => {
                 const imgData = canvas.toDataURL('image/jpeg', 0.85); // Use JPEG with 85% quality for smaller size
-                // Calculate scale to fit image to page
-                const scale = Math.min(pageWidth / exportWidth, pageHeight / exportHeight);
-                const imgW = exportWidth * scale;
-                const imgH = exportHeight * scale;
-                const x = (pageWidth - imgW) / 2;
-                const y = (pageHeight - imgH) / 2;
-                pdf.addImage(imgData, 'JPEG', x, y, imgW, imgH);
+                pdf.addImage(imgData, 'JPEG', 0, 0, exportWidth, exportHeight);
                 pdf.save(`${fileNameBase}.pdf`);
             });
         } else {
