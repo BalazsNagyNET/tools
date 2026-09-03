@@ -244,6 +244,37 @@
             border-radius: 15%;
         }
 
+        .update-notice {
+            display: none;
+            position: relative;
+            background: #fff3cd;
+            border: 1px solid #ffe69c;
+            color: #664d03;
+            border-radius: 8px;
+            padding: 0.8rem 2.2rem 0.8rem 0.9rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .update-notice.visible {
+            display: block;
+        }
+
+        .update-notice-close {
+            position: absolute;
+            top: 0.4rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            line-height: 1;
+            cursor: pointer;
+            color: #664d03;
+            padding: 0.2rem 0.4rem;
+            margin: 0;
+        }
+
         @media (max-width: 600px) {
             .container {
                 max-width: 90vw;
@@ -266,6 +297,10 @@
 <body>
     <div class="container">
         <h1>Kérelem Generátor<span class="santa-hat">🎅</span></h1>
+        <div class="update-notice" id="updateNotice">
+            <button type="button" class="update-notice-close" id="updateNoticeClose" aria-label="Bezárás">×</button>
+            Sziasztok, kicsit módosítottam a formátumon, alulról eltűntetem a felesleges óvónői aláírást, elektronikusan ugysem fogja senki aláírni. Mostantól ovit is kell választani. A dátum választó pedig talán kicsit használhatóbb lett. Ha valami nem működne jól, kérlek jelezzétek.
+        </div>
         <form id="requestForm">
             <label>Szülő neve <input name="parentName" required></label>
             <label>Óvoda
@@ -347,6 +382,20 @@
         }
     })();
     // ==================== DECEMBER EASTER EGGS - END ====================
+
+    // One-time update notice, shown for a month unless already dismissed
+    (function() {
+        const NOTICE_EXPIRY = new Date('2026-10-03');
+        const notice = document.getElementById('updateNotice');
+        const closeBtn = document.getElementById('updateNoticeClose');
+        if (new Date() < NOTICE_EXPIRY && !localStorage.getItem('kerelem_notice_2026_09_dismissed')) {
+            notice.classList.add('visible');
+        }
+        closeBtn.addEventListener('click', () => {
+            notice.classList.remove('visible');
+            localStorage.setItem('kerelem_notice_2026_09_dismissed', '1');
+        });
+    })();
 
     // Hungarian date formatting function
     function formatDateHungarian(date, removeTrailingDot = false) {
