@@ -259,13 +259,24 @@
 </head>
 <body>
     <div class="container">
-        <h1>Szókereső</h1>
+        <h1 data-i18n="title">Szókereső</h1>
 
         <div class="controls">
-            <label>Témakör
+            <label>
+                <span data-i18n="lang">Nyelv</span>
+                <select id="lang">
+                    <option value="hu">Magyar</option>
+                    <option value="cs">Čeština</option>
+                    <option value="sk">Slovenčina</option>
+                    <option value="en">English</option>
+                </select>
+            </label>
+            <label>
+                <span data-i18n="topic">Témakör</span>
                 <select id="topic"></select>
             </label>
-            <label>Méret
+            <label>
+                <span data-i18n="size">Méret</span>
                 <select id="size">
                     <option value="8">8 × 8</option>
                     <option value="10">10 × 10</option>
@@ -274,7 +285,8 @@
                     <option value="20">20 × 20</option>
                 </select>
             </label>
-            <label>Szavak száma
+            <label>
+                <span data-i18n="count">Szavak száma</span>
                 <select id="count">
                     <option value="6">6</option>
                     <option value="8">8</option>
@@ -285,109 +297,193 @@
             </label>
             <label class="check">
                 <input type="checkbox" id="back">
-                Visszafelé is
+                <span data-i18n="back">Visszafelé is</span>
             </label>
-            <button id="newBtn" type="button">Új rejtvény</button>
+            <button id="newBtn" type="button" data-i18n="newBtn">Új rejtvény</button>
         </div>
 
         <div class="status">
             <span id="progress"></span>
-            <span id="timer">Idő: 00:00</span>
+            <span id="timer"></span>
         </div>
         <div class="message" id="message"></div>
 
         <div class="play">
             <div class="grid" id="grid"></div>
             <div class="words">
-                <h2>Keresett szavak</h2>
+                <h2 data-i18n="wordsHeading">Keresett szavak</h2>
                 <ul id="wordList"></ul>
             </div>
         </div>
 
         <div class="actions">
-            <button id="solveBtn" type="button" class="secondary">Megoldás</button>
-            <button id="printBtn" type="button" class="secondary">Nyomtatás</button>
+            <button id="solveBtn" type="button" class="secondary" data-i18n="solve">Megoldás</button>
+            <button id="printBtn" type="button" class="secondary" data-i18n="print">Nyomtatás</button>
         </div>
 
-        <p class="note">
-            Húzd az ujjadat (vagy az egeret) a szó betűin vízszintesen, függőlegesen vagy átlósan.
-            A szavak a kódba vannak beépítve, így internet nélkül is működik.
-        </p>
+        <p class="note" data-i18n="note"></p>
     </div>
 
     <script>
-        // ==================== SZAVAK (témakörönként) ====================
-        const TOPICS = {
-            allatok: {
-                name: 'Állatok',
-                words: ['kutya', 'macska', 'ló', 'tehén', 'disznó', 'juh', 'kecske', 'nyúl', 'egér', 'patkány', 'róka', 'medve', 'farkas', 'oroszlán', 'tigris', 'elefánt', 'zebra', 'zsiráf', 'majom', 'delfin', 'cápa', 'bálna', 'teknős', 'béka', 'kígyó', 'krokodil', 'pingvin', 'sas', 'bagoly', 'galamb', 'csirke', 'kacsa', 'hattyú', 'pillangó', 'méh', 'hangya', 'pók', 'szarvas', 'hód']
+        // ==================== UI SZÖVEGEK ====================
+        const STR = {
+            hu: {
+                title: 'Szókereső', lang: 'Nyelv', topic: 'Témakör', size: 'Méret', count: 'Szavak száma',
+                back: 'Visszafelé is', newBtn: 'Új rejtvény', found: 'Megtalálva', time: 'Idő',
+                wordsHeading: 'Keresett szavak', solve: 'Megoldás', print: 'Nyomtatás',
+                note: 'Húzd az ujjadat (vagy az egeret) a szó betűin vízszintesen, függőlegesen vagy átlósan. A szavak a kódba vannak beépítve, így internet nélkül is működik.',
+                win: 'Gratulálok, megtaláltad az összes szót! Idő: ',
+                solved: 'A megoldás meg van jelölve a rácsban.'
             },
-            gyumolcs: {
-                name: 'Gyümölcsök és zöldségek',
-                words: ['alma', 'körte', 'szilva', 'barack', 'cseresznye', 'meggy', 'dinnye', 'szőlő', 'banán', 'narancs', 'citrom', 'eper', 'málna', 'ribizli', 'áfonya', 'mandarin', 'kivi', 'ananász', 'mango', 'szeder', 'répa', 'paradicsom', 'uborka', 'paprika', 'burgonya', 'hagyma', 'fokhagyma', 'cékla', 'retek', 'káposzta', 'spenót', 'borsó', 'bab', 'karfiol', 'brokkoli', 'cukkini', 'tök', 'padlizsán', 'saláta']
+            cs: {
+                title: 'Hledání slov', lang: 'Jazyk', topic: 'Téma', size: 'Velikost', count: 'Počet slov',
+                back: 'I pozpátku', newBtn: 'Nová hádanka', found: 'Nalezeno', time: 'Čas',
+                wordsHeading: 'Hledaná slova', solve: 'Řešení', print: 'Tisk',
+                note: 'Táhněte prstem (nebo myší) přes písmena slova vodorovně, svisle nebo úhlopříčně. Slova jsou zabudovaná v kódu, takže funguje i bez internetu.',
+                win: 'Gratulujeme, našli jste všechna slova! Čas: ',
+                solved: 'Řešení je vyznačeno v mřížce.'
             },
-            etel: {
-                name: 'Ételek és italok',
-                words: ['leves', 'kenyér', 'sajt', 'tej', 'vaj', 'túró', 'tojás', 'sonka', 'kolbász', 'pogácsa', 'lángos', 'gulyás', 'pörkölt', 'rétes', 'palacsinta', 'fánk', 'csokoládé', 'méz', 'cukor', 'liszt', 'rizs', 'tészta', 'víz', 'tea', 'kávé', 'kakaó', 'limonádé', 'bor', 'sör', 'pálinka', 'szörp', 'joghurt', 'kefir']
+            sk: {
+                title: 'Hľadanie slov', lang: 'Jazyk', topic: 'Téma', size: 'Veľkosť', count: 'Počet slov',
+                back: 'Aj pozpätku', newBtn: 'Nová hádanka', found: 'Nájdené', time: 'Čas',
+                wordsHeading: 'Hľadané slová', solve: 'Riešenie', print: 'Tlač',
+                note: 'Ťahajte prstom (alebo myšou) cez písmená slova vodorovne, zvisle alebo uhlopriečne. Slová sú zabudované v kóde, takže funguje aj bez internetu.',
+                win: 'Gratulujeme, našli ste všetky slová! Čas: ',
+                solved: 'Riešenie je vyznačené v mriežke.'
             },
-            termeszet: {
-                name: 'Természet',
-                words: ['hegy', 'folyó', 'tó', 'tenger', 'erdő', 'mező', 'völgy', 'sziget', 'sivatag', 'barlang', 'vízesés', 'szikla', 'domb', 'patak', 'forrás', 'fa', 'virág', 'fű', 'levél', 'gyökér', 'mag', 'kő', 'homok', 'föld', 'liget', 'tisztás', 'mocsár', 'vulkán', 'gleccser', 'óceán', 'tavasz', 'csillag', 'hold', 'napfény']
-            },
-            csalad: {
-                name: 'Család és emberek',
-                words: ['anya', 'apa', 'nagymama', 'nagypapa', 'fiú', 'lány', 'testvér', 'unoka', 'rokon', 'barát', 'szomszéd', 'gyermek', 'férj', 'feleség', 'nagynéni', 'nagybácsi', 'keresztapa', 'keresztanya', 'unokatestvér', 'férfi', 'nő', 'család', 'gyerek', 'ember']
-            },
-            iskola: {
-                name: 'Iskola',
-                words: ['tanár', 'diák', 'tanterem', 'tábla', 'kréta', 'füzet', 'toll', 'ceruza', 'radír', 'könyv', 'táska', 'szünet', 'tanóra', 'iskola', 'osztály', 'vizsga', 'dolgozat', 'térkép', 'tornaterem', 'igazgató', 'rajz', 'betű', 'szám', 'körző', 'vonalzó', 'olló', 'ragasztó', 'tankönyv', 'óra', 'jegy']
-            },
-            idojaras: {
-                name: 'Időjárás és évszakok',
-                words: ['eső', 'hó', 'szél', 'felhő', 'köd', 'villám', 'mennydörgés', 'jég', 'zivatar', 'fagy', 'hőség', 'tavasz', 'nyár', 'ősz', 'tél', 'hőmérő', 'szivárvány', 'párás', 'hideg', 'meleg', 'napos', 'borús', 'vihar', 'hurrikán', 'szárazság']
-            },
-            kozlekedes: {
-                name: 'Közlekedés',
-                words: ['autó', 'busz', 'vonat', 'villamos', 'metró', 'repülő', 'hajó', 'kerékpár', 'motor', 'taxi', 'teherautó', 'mentő', 'kamion', 'állomás', 'repülőtér', 'kikötő', 'sín', 'híd', 'megálló', 'helikopter', 'csónak', 'robogó', 'sofőr', 'járda', 'alagút', 'pályaudvar', 'jegy', 'út']
-            },
-            sport: {
-                name: 'Sport',
-                words: ['foci', 'kosárlabda', 'röplabda', 'tenisz', 'úszás', 'futás', 'síelés', 'korcsolya', 'birkózás', 'kézilabda', 'vívás', 'torna', 'sakk', 'golf', 'evezés', 'edzés', 'mérkőzés', 'gól', 'kapus', 'labda', 'pálya', 'verseny', 'érem', 'serleg', 'edző', 'csapat', 'versenyző', 'sprint', 'ugrás', 'dobás']
-            },
-            test: {
-                name: 'Test',
-                words: ['fej', 'kar', 'láb', 'kéz', 'ujj', 'szem', 'fül', 'orr', 'száj', 'nyak', 'váll', 'hát', 'has', 'térd', 'boka', 'comb', 'szív', 'tüdő', 'agy', 'haj', 'fog', 'nyelv', 'csont', 'bőr', 'arc', 'homlok', 'ajak', 'köröm', 'könyök']
-            },
-            ruhazat: {
-                name: 'Ruházat',
-                words: ['kabát', 'kalap', 'sapka', 'sál', 'kesztyű', 'cipő', 'csizma', 'szandál', 'nadrág', 'szoknya', 'ing', 'póló', 'pulóver', 'zokni', 'öv', 'ruha', 'kardigán', 'dzseki', 'pizsama', 'harisnya', 'papucs', 'bakancs', 'nyakkendő', 'mellény', 'köpeny', 'overál']
-            },
-            otthon: {
-                name: 'Otthon és lakás',
-                words: ['szoba', 'konyha', 'fürdőszoba', 'nappali', 'hálószoba', 'kanapé', 'szék', 'asztal', 'ágy', 'szekrény', 'polc', 'lámpa', 'tükör', 'ajtó', 'ablak', 'kert', 'erkély', 'padlás', 'pince', 'fotel', 'hűtő', 'mosógép', 'porszívó', 'szőnyeg', 'függöny', 'párna', 'takaró', 'kád', 'lépcső', 'folyosó']
-            },
-            zene: {
-                name: 'Zene',
-                words: ['dal', 'hangszer', 'zongora', 'gitár', 'hegedű', 'dob', 'fuvola', 'trombita', 'szaxofon', 'csellő', 'harmonika', 'klarinét', 'zenekar', 'kórus', 'ének', 'hangjegy', 'koncert', 'ritmus', 'dallam', 'hangerő', 'lemez', 'karmester', 'zeneszerző', 'énekes', 'zenész']
-            },
-            szakmak: {
-                name: 'Szakmák',
-                words: ['orvos', 'ápoló', 'pék', 'szakács', 'pincér', 'mérnök', 'ügyvéd', 'bíró', 'rendőr', 'tűzoltó', 'pilóta', 'pap', 'kertész', 'villanyszerelő', 'asztalos', 'festő', 'kőműves', 'fodrász', 'vadász', 'halász', 'eladó', 'könyvelő', 'programozó', 'újságíró', 'fényképész', 'színész', 'zenész', 'állatorvos', 'munkás', 'bányász', 'postás']
+            en: {
+                title: 'Word Search', lang: 'Language', topic: 'Topic', size: 'Size', count: 'Number of words',
+                back: 'Allow backwards', newBtn: 'New puzzle', found: 'Found', time: 'Time',
+                wordsHeading: 'Words to find', solve: 'Solution', print: 'Print',
+                note: 'Drag your finger (or mouse) across the letters of a word horizontally, vertically or diagonally. The words are built into the page, so it works offline.',
+                win: 'Congratulations, you found all the words! Time: ',
+                solved: 'The solution is highlighted in the grid.'
             }
         };
 
-        // Vegyes = minden témakör szava
-        TOPICS.vegyes = {
-            name: 'Vegyes',
-            words: [...new Set(Object.values(TOPICS).flatMap(t => t.words))]
+        // ==================== TÉMAKÖRÖK ====================
+        const TOPIC_NAMES = {
+            allatok:    { hu: 'Állatok', cs: 'Zvířata', sk: 'Zvieratá', en: 'Animals' },
+            gyumolcs:   { hu: 'Gyümölcsök és zöldségek', cs: 'Ovoce a zelenina', sk: 'Ovocie a zelenina', en: 'Fruit and vegetables' },
+            etel:       { hu: 'Ételek és italok', cs: 'Jídlo a pití', sk: 'Jedlo a nápoje', en: 'Food and drinks' },
+            termeszet:  { hu: 'Természet', cs: 'Příroda', sk: 'Príroda', en: 'Nature' },
+            csalad:     { hu: 'Család és emberek', cs: 'Rodina a lidé', sk: 'Rodina a ľudia', en: 'Family and people' },
+            iskola:     { hu: 'Iskola', cs: 'Škola', sk: 'Škola', en: 'School' },
+            idojaras:   { hu: 'Időjárás és évszakok', cs: 'Počasí a roční období', sk: 'Počasie a ročné obdobia', en: 'Weather and seasons' },
+            kozlekedes: { hu: 'Közlekedés', cs: 'Doprava', sk: 'Doprava', en: 'Transport' },
+            sport:      { hu: 'Sport', cs: 'Sport', sk: 'Šport', en: 'Sports' },
+            test:       { hu: 'Test', cs: 'Tělo', sk: 'Telo', en: 'Body' },
+            ruhazat:    { hu: 'Ruházat', cs: 'Oblečení', sk: 'Oblečenie', en: 'Clothing' },
+            otthon:     { hu: 'Otthon és lakás', cs: 'Domov', sk: 'Domov', en: 'Home' },
+            zene:       { hu: 'Zene', cs: 'Hudba', sk: 'Hudba', en: 'Music' },
+            szakmak:    { hu: 'Szakmák', cs: 'Povolání', sk: 'Povolania', en: 'Jobs' },
+            vegyes:     { hu: 'Vegyes', cs: 'Smíšené', sk: 'Zmiešané', en: 'Mixed' }
         };
 
-        // Töltő betűk: a magyar ábécé egybetűs betűi (dz, cs, gy, ... digráfok nélkül)
-        const FILL = 'aábcdeéfghiíjklmnoóöőprstuúüűvz';
+        // Szavak nyelvenként, szóközzel elválasztva (többszavas kifejezés nincs)
+        const WORDS = {
+            allatok: {
+                hu: 'kutya macska ló tehén disznó juh kecske nyúl egér patkány róka medve farkas oroszlán tigris elefánt zebra zsiráf majom delfin cápa bálna teknős béka kígyó krokodil pingvin sas bagoly galamb csirke kacsa hattyú pillangó méh hangya pók szarvas hód süni szamár csiga teve papagáj varjú fecske liba mókus vidra borz sólyom pulyka víziló',
+                cs: 'pes kočka kůň kráva prase ovce koza králík myš krysa liška medvěd vlk lev tygr slon zebra žirafa opice delfín žralok velryba želva žába had krokodýl tučňák orel sova holub kuře kachna labuť motýl včela mravenec pavouk jelen srnec ježek osel veverka vydra jezevec sokol vrána vlaštovka husa páv',
+                sk: 'pes mačka kôň krava prasa ovca koza zajac myš potkan líška medveď vlk lev tiger slon zebra žirafa opica delfín žralok veľryba korytnačka žaba had krokodíl tučniak orol sova holub kura kačica labuť motýľ včela mravec pavúk jeleň srnec ježko somár veverička vydra jazvec sokol havran lastovička hus páv',
+                en: 'dog cat horse cow pig sheep goat rabbit mouse rat fox bear wolf lion tiger elephant zebra giraffe monkey dolphin shark whale turtle frog snake crocodile penguin eagle owl pigeon chicken duck swan butterfly bee ant spider deer hedgehog donkey squirrel otter badger falcon crow swallow goose peacock'
+            },
+            gyumolcs: {
+                hu: 'alma körte szilva barack cseresznye meggy dinnye szőlő banán narancs citrom eper málna ribizli áfonya mandarin kivi ananász mango szeder répa paradicsom uborka paprika burgonya hagyma fokhagyma cékla retek káposzta spenót borsó bab karfiol brokkoli cukkini tök padlizsán saláta sárgarépa zeller gomba kukorica dió görögdinnye articsóka',
+                cs: 'jablko hruška švestka meruňka třešeň višeň meloun hrozen banán pomeranč citron jahoda malina rybíz borůvka mandarinka broskev ananas mango ostružina mrkev rajče okurka paprika brambor cibule česnek řepa ředkev zelí špenát hrášek fazole květák brokolice cuketa dýně lilek salát houba kukuřice ořech mandle celer pórek',
+                sk: 'jablko hruška slivka marhuľa čerešňa višňa melón hrozno banán pomaranč citrón jahoda malina ríbezle čučoriedka mandarínka kivi ananás mango černica mrkva paradajka uhorka paprika zemiak cibuľa cesnak repa reďkovka kapusta špenát hrášok fazuľa karfiol brokolica cuketa tekvica baklažán šalát huba kukurica orech mandľa zeler',
+                en: 'apple pear plum apricot cherry melon grape banana orange lemon strawberry raspberry currant blueberry mandarin kiwi pineapple mango blackberry carrot tomato cucumber pepper potato onion garlic beet radish cabbage spinach pea bean cauliflower broccoli zucchini pumpkin eggplant lettuce mushroom corn walnut almond celery leek'
+            },
+            etel: {
+                hu: 'leves kenyér sajt tej vaj túró tojás sonka kolbász pogácsa lángos gulyás pörkölt rétes palacsinta fánk csokoládé méz cukor liszt rizs tészta víz tea kávé kakaó limonádé bor sör pálinka szörp joghurt kefir zsemle kifli lecsó halászlé fasírt rántott hús hal szendvics kalács torta sütemény keksz tejszín mustár ecet bors jégkrém gyümölcslé',
+                cs: 'polévka chléb sýr mléko máslo tvaroh vejce šunka klobása buchta langoš guláš řízek koláč palačinka čokoláda med cukr mouka rýže těstoviny voda čaj káva kakao limonáda víno pivo slivovice sirup jogurt kefír rohlík bageta smetana hořčice ocet sůl pepř zmrzlina džem salám omáčka knedlík bramborák',
+                sk: 'polievka chlieb syr mlieko maslo tvaroh vajce šunka klobása koláč lángoš guláš rezeň pečivo čokoláda med cukor múka ryža cestoviny voda čaj káva kakao limonáda víno pivo slivovica sirup jogurt kefír rožok žemľa smotana horčica ocot soľ korenie zmrzlina džem omáčka knedľa halušky',
+                en: 'soup bread cheese milk butter egg ham sausage pastry chocolate honey sugar flour rice pasta water tea coffee cocoa lemonade wine beer juice yogurt bun cream mustard vinegar salt pepper pancake pizza burger salad cake cookie biscuit noodle omelette dumpling stew porridge toast jam muffin'
+            },
+            termeszet: {
+                hu: 'hegy folyó tó tenger erdő mező völgy sziget sivatag barlang vízesés szikla domb patak forrás fa virág fű levél gyökér mag kő homok föld liget tisztás mocsár vulkán gleccser óceán csillag hold napfény ág moha dűne tundra rét láp szirt ösvény fenyő tölgy bükk nyír',
+                cs: 'hora řeka jezero moře les louka údolí ostrov poušť jeskyně vodopád skála kopec potok pramen strom květina tráva list kořen semínko kámen písek země háj bažina sopka ledovec oceán hvězda měsíc slunce mech step duna tundra útes kráter pláž zátoka rybník kaktus dub buk borovice smrk vrba',
+                sk: 'hora rieka jazero more les lúka dolina ostrov púšť jaskyňa vodopád skala kopec potok prameň strom kvet tráva list koreň semiačko kameň piesok zem háj močiar sopka ľadovec oceán hviezda mesiac slnko mach step duna tundra útes kráter pláž zátoka rybník kaktus dub buk borovica smrek vŕba',
+                en: 'mountain river lake sea forest meadow valley island desert cave waterfall rock hill stream spring tree flower grass leaf root seed stone sand earth marsh volcano glacier ocean star moon sun moss dune tundra cliff canyon reef beach bay pond cactus oak pine birch willow'
+            },
+            csalad: {
+                hu: 'anya apa nagymama nagypapa fiú lány testvér unoka rokon barát szomszéd gyermek férj feleség nagynéni nagybácsi keresztapa keresztanya unokatestvér férfi nő család gyerek ember baba kisfiú kislány sógor anyós após ikrek',
+                cs: 'máma táta babička dědeček syn dcera bratr sestra vnuk vnučka příbuzný přítel soused dítě manžel manželka strýc teta kmotr kmotra sestřenice bratranec muž žena člověk rodina chlapec dívka synovec neteř švagr tchán tchyně miminko dvojčata snoubenec',
+                sk: 'mama otec babka dedko syn dcéra brat sestra vnuk vnučka príbuzný priateľ sused dieťa manžel manželka strýko teta krstný krstná sesternica bratranec muž žena človek rodina chlapec dievča synovec netere švagor svokra svokor bábätko dvojčatá zať',
+                en: 'mother father grandma grandpa son daughter brother sister uncle aunt cousin nephew niece husband wife child baby friend neighbour relative parent family twin grandson stepson partner godmother godfather widow orphan'
+            },
+            iskola: {
+                hu: 'tanár diák tanterem tábla kréta füzet toll ceruza radír könyv táska szünet tanóra iskola osztály vizsga dolgozat térkép tornaterem igazgató rajz betű szám körző vonalzó olló ragasztó tankönyv óra jegy tanító napló szótár atlasz órarend tudás tanulás feladat kérdés válasz jegyzet',
+                cs: 'učitel žák třída tabule křída sešit pero tužka guma kniha aktovka přestávka hodina škola ročník zkouška písemka mapa tělocvična ředitel kresba písmeno číslo kružítko pravítko nůžky lepidlo učebnice známka úkol slovník atlas rozvrh vědomosti učení otázka odpověď poznámka',
+                sk: 'učiteľ žiak trieda tabuľa krieda zošit pero ceruzka guma kniha aktovka prestávka hodina škola ročník skúška písomka mapa telocvičňa riaditeľ kresba písmeno číslo kružidlo pravítko nožnice lepidlo učebnica známka zadanie slovník atlas rozvrh vedomosti učenie otázka odpoveď poznámka',
+                en: 'teacher pupil student classroom board chalk notebook pen pencil eraser book backpack break lesson school class exam test map gym principal drawing letter number compass ruler scissors glue textbook grade homework dictionary atlas timetable knowledge study question answer note desk library subject'
+            },
+            idojaras: {
+                hu: 'eső hó szél felhő köd villám mennydörgés jég zivatar fagy hőség tavasz nyár ősz tél hőmérő szivárvány párás hideg meleg napos borús vihar hurrikán szárazság tornádó harmat dér havazás napsütés fergeteg szeles ónos hótakaró derült',
+                cs: 'déšť sníh vítr mrak mlha blesk hrom kroupy bouřka mráz horko jaro léto podzim zima teploměr duha vlhko chladno slunečno zataženo rosa jinovatka vánice tornádo hurikán sucho přeháňka mrholení obleva',
+                sk: 'dážď sneh vietor oblak hmla blesk hrom ľad búrka mráz horúčava jar leto jeseň zima teplomer dúha vlhko chladno slnečno zamračené rosa námraza snehová tornádo hurikán sucho prehánka mrholenie oblačno teplo ochladenie',
+                en: 'rain snow wind cloud fog lightning thunder ice storm frost heat spring summer autumn winter thermometer rainbow humid cold warm sunny cloudy dew hail blizzard tornado hurricane drought drizzle shower sleet breeze gale forecast thaw freeze'
+            },
+            kozlekedes: {
+                hu: 'autó busz vonat villamos metró repülő hajó kerékpár motor teherautó mentő kamion állomás repülőtér kikötő sín híd megálló helikopter csónak robogó sofőr járda alagút pályaudvar jegy út kocsi utas kalauz vasút gyalogos parkoló benzin forgalom kereszteződés',
+                cs: 'auto autobus vlak tramvaj metro letadlo loď kolo motorka trolejbus nákladní sanitka kamion nádraží letiště přístav kolej most zastávka vrtulník člun skútr řidič chodník tunel jízdenka silnice ulice semafor parkoviště benzín provoz křižovatka spolujezdec cestující průvodčí železnice chodec vozidlo',
+                sk: 'auto autobus vlak električka metro lietadlo loď bicykel motorka trolejbus nákladné sanitka kamión stanica letisko prístav koľaj most zástavka vrtuľník čln skúter vodič chodník tunel lístok cesta ulica semafor parkovisko benzín premávka križovatka spolujazdec cestujúci sprievodca železnica chodec vozidlo',
+                en: 'car bus train tram metro plane ship bicycle motorbike taxi truck ambulance lorry station airport harbour rail bridge stop helicopter boat scooter driver pavement tunnel ticket road street parking petrol traffic crossing passenger conductor railway pedestrian vehicle highway'
+            },
+            sport: {
+                hu: 'foci kosárlabda röplabda tenisz úszás futás síelés korcsolya birkózás kézilabda vívás torna sakk golf evezés edzés mérkőzés gól kapus labda pálya verseny érem serleg edző csapat versenyző sprint ugrás dobás kerékpározás ökölvívás teke lovaglás vitorlázás triatlon maraton döntő ütő háló sisak mez szurkoló bíró kapu',
+                cs: 'fotbal basketbal volejbal tenis plavání běh lyžování bruslení zápas šerm gymnastika šach golf veslování trénink gól brankář míč hřiště soutěž medaile pohár trenér tým závodník šprint skok hod cyklistika judo karate maraton triatlon rozhodčí dres helma síť branka stadion závod',
+                sk: 'futbal basketbal volejbal tenis plávanie beh lyžovanie korčuľovanie zápas šerm gymnastika šach golf veslovanie tréning gól brankár lopta ihrisko súťaž medaila pohár tréner tím pretekár šprint skok hod cyklistika judo karate maratón triatlon rozhodca dres prilba sieť brána štadión pretek',
+                en: 'football basketball volleyball tennis swimming running skiing skating wrestling fencing gymnastics chess golf rowing training goal goalkeeper ball pitch contest medal cup coach team athlete sprint jump throw boxing cycling judo karate marathon triathlon referee jersey helmet net arena match race bowling archery sailing hockey'
+            },
+            test: {
+                hu: 'fej kar láb kéz ujj szem fül orr száj nyak váll hát has térd boka comb szív tüdő agy haj fog nyelv csont bőr arc homlok ajak köröm könyök gerinc vese máj izom mell derék csípő sarok talp bordák szemöldök szempilla',
+                cs: 'hlava paže noha ruka prst oko ucho nos ústa krk rameno záda břicho koleno kotník stehno srdce plíce mozek vlasy zub jazyk kost kůže tvář čelo rty nehet loket páteř žaludek játra sval hrudník ledvina bok pata chodidlo obočí řasy',
+                sk: 'hlava paža noha ruka prst oko ucho nos ústa krk plece chrbát brucho koleno členok stehno srdce pľúca mozog vlasy zub jazyk kosť koža tvár čelo pery necht lakeť chrbtica žalúdok pečeň sval hrudník oblička bok päta chodidlo obočie mihalnice',
+                en: 'head arm leg hand finger eye ear nose mouth neck shoulder back belly knee ankle thigh heart lung brain hair tooth tongue bone skin face forehead lip nail elbow spine stomach liver muscle chest kidney hip heel palm toe eyebrow eyelash wrist rib skull'
+            },
+            ruhazat: {
+                hu: 'kabát kalap sapka sál kesztyű cipő csizma szandál nadrág szoknya ing póló pulóver zokni öv ruha kardigán dzseki pizsama harisnya papucs bakancs nyakkendő mellény köpeny overál kötény fürdőruha blúz zakó kendő pulcsi szemüveg',
+                cs: 'kabát klobouk čepice šála rukavice bota čižma sandál kalhoty sukně košile tričko svetr ponožka pásek šaty kardigan bunda pyžamo punčocha pantofle holínky šátek vesta plášť zástěra plavky kravata župan oblek brýle',
+                sk: 'kabát klobúk čiapka šál rukavica topánka čižma sandál nohavice sukňa košeľa tričko sveter ponožka opasok šaty kardigán bunda pyžamo pančucha papuče gumáky šatka vesta plášť zásterka plavky kravata župan sako oblek',
+                en: 'coat hat cap scarf glove shoe boot sandal trousers skirt shirt jumper sock belt dress cardigan jacket pyjamas tights slipper overall tie vest cloak apron swimsuit gown robe suit hoodie jeans shorts mitten uniform sneaker raincoat bandana'
+            },
+            otthon: {
+                hu: 'szoba konyha fürdőszoba nappali hálószoba kanapé szék asztal ágy szekrény polc lámpa tükör ajtó ablak kert erkély padlás pince fotel hűtő mosógép porszívó szőnyeg függöny párna takaró kád lépcső folyosó előszoba csésze tányér kanál villa kés tál edény szappan törölköző fogkefe sütő mosdó kulcs',
+                cs: 'pokoj kuchyně koupelna obývák ložnice pohovka židle stůl postel skříň police lampa zrcadlo dveře okno zahrada balkon půda sklep křeslo lednice pračka vysavač koberec záclona polštář deka vana schody chodba talíř lžíce vidlička nůž mísa hrnec mýdlo ručník klíč sporák předsíň hrnek konvice trouba',
+                sk: 'izba kuchyňa kúpeľňa obývačka spálňa gauč stolička stôl posteľ skriňa polica lampa zrkadlo dvere okno záhrada balkón podkrovie pivnica kreslo chladnička práčka vysávač koberec záclona vankúš deka vaňa schody chodba tanier lyžica vidlička nôž misa hrniec mydlo uterák kľúč sporák predsieň šálka kanvica rúra',
+                en: 'room kitchen bathroom lounge bedroom sofa chair table bed wardrobe shelf lamp mirror door window garden balcony attic cellar armchair fridge washer vacuum carpet curtain pillow blanket bath stairs hallway plate spoon fork knife bowl pot soap towel key oven cup kettle sink drawer cupboard hall floor'
+            },
+            zene: {
+                hu: 'dal hangszer zongora gitár hegedű dob fuvola trombita csellő harmonika klarinét zenekar kórus ének hangjegy koncert ritmus dallam hangerő lemez karmester zeneszerző énekes zenész furulya cimbalom orgona hárfa kürt bőgő énekkar refrén dalszöveg taktus hangszóró hangszín',
+                cs: 'píseň nástroj klavír kytara housle buben flétna trubka harmonika klarinet orchestr sbor zpěv nota koncert rytmus melodie hlasitost deska dirigent skladatel zpěvák hudebník cimbál harfa varhany roh basa refrén tón akord stupnice dur moll tempo kapela sólo',
+                sk: 'pieseň nástroj klavír gitara husle bubon flauta trúbka harmonika klarinet orchester zbor spev nota koncert rytmus melódia hlasitosť platňa dirigent skladateľ spevák hudobník cimbal harfa organy roh basa refrén tón akord stupnica dur mol tempo kapela sólo',
+                en: 'song instrument piano guitar violin drum flute trumpet saxophone harmonica clarinet orchestra choir voice note concert rhythm melody volume record conductor composer singer musician cymbal harp organ horn bass chorus lyrics tone chord scale tempo band solo opera jazz rock pop beat album'
+            },
+            szakmak: {
+                hu: 'orvos ápoló pék szakács pincér mérnök ügyvéd bíró rendőr tűzoltó pilóta pap kertész villanyszerelő asztalos festő kőműves fodrász vadász halász eladó könyvelő programozó újságíró fényképész színész zenész állatorvos munkás bányász postás tanító hentes cukrász kovács ács űrhajós tolmács rendező szerelő lakatos biológus vegyész gyógyszerész',
+                cs: 'lékař sestra pekař kuchař číšník inženýr advokát soudce policista hasič pilot kněz zahradník elektrikář truhlář malíř zedník kadeřník myslivec rybář prodavač účetní programátor novinář fotograf herec hudebník veterinář dělník horník pošťák řezník cukrář kovář tesař astronaut tlumočník režisér zámečník biolog chemik farmaceut',
+                sk: 'lekár sestra pekár kuchár čašník inžinier advokát sudca policajt hasič pilot kňaz záhradník elektrikár stolár maliar murár kaderník poľovník rybár predavač účtovník programátor novinár fotograf herec hudobník veterinár robotník baník poštár mäsiar cukrár kováč tesár astronaut tlmočník režisér zámočník biológ chemik farmaceut',
+                en: 'doctor nurse baker cook waiter engineer lawyer judge police firefighter pilot priest gardener electrician carpenter painter bricklayer hairdresser hunter fisherman seller accountant programmer journalist photographer actor musician vet worker miner postman butcher confectioner blacksmith roofer astronaut interpreter director locksmith biologist chemist pharmacist mechanic plumber dentist farmer driver teacher architect'
+            }
+        };
 
+        // Töltőbetűk nyelvenként: az adott nyelv ábécéje (digráfok nélkül)
+        const FILL = {
+            hu: 'aábcdeéfghiíjklmnoóöőprstuúüűvz',
+            cs: 'aábcčdďeéěfghiíjklmnňoóprřsštťuúůvyýzž',
+            sk: 'aáäbcčdďeéfghiíjklľĺmnňoóôprŕsštťuúvyýzž',
+            en: 'abcdefghijklmnopqrstuvwxyz'
+        };
+
+        const SUPPORTED = ['hu', 'cs', 'sk', 'en'];
         const STORAGE_KEY = 'szokereso-settings';
+        const TOPIC_KEYS = [...Object.keys(WORDS), 'vegyes'];
 
         // ==================== ÁLLAPOT ====================
+        let lang = 'hu';
+        let savedTopic = null;
+
         const state = {
             n: 0,
             grid: [],
@@ -405,6 +501,7 @@
         let selEls = [];
 
         const els = {
+            lang: document.getElementById('lang'),
             topic: document.getElementById('topic'),
             size: document.getElementById('size'),
             count: document.getElementById('count'),
@@ -419,11 +516,18 @@
             printBtn: document.getElementById('printBtn')
         };
 
-        // ==================== BEÁLLÍTÁSOK MENTÉSE ====================
+        // ==================== NYELV, BEÁLLÍTÁSOK ====================
+        function detectLang() {
+            const code = (navigator.language || 'hu').slice(0, 2).toLowerCase();
+            return SUPPORTED.includes(code) ? code : 'hu';
+        }
+
         function loadSettings() {
+            lang = detectLang();
             try {
                 const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-                if (s.topic && TOPICS[s.topic]) els.topic.value = s.topic;
+                if (SUPPORTED.includes(s.lang)) lang = s.lang;
+                if (TOPIC_KEYS.includes(s.topic)) savedTopic = s.topic;
                 if (s.size) els.size.value = String(s.size);
                 if (s.count) els.count.value = String(s.count);
                 if (typeof s.back === 'boolean') els.back.checked = s.back;
@@ -435,6 +539,7 @@
         function saveSettings() {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    lang,
                     topic: els.topic.value,
                     size: Number(els.size.value),
                     count: Number(els.count.value),
@@ -443,6 +548,38 @@
             } catch (e) {
                 // nem baj, ha nem menthető
             }
+        }
+
+        // A felület szövegei, témakör-nevek és a nyelv-választó frissítése
+        function applyUI() {
+            const S = STR[lang];
+            document.documentElement.lang = lang;
+            document.title = S.title;
+            document.querySelector('h1').textContent = S.title;
+            els.lang.value = lang;
+
+            const current = els.topic.value || 'allatok';
+            els.topic.innerHTML = '';
+            for (const key of TOPIC_KEYS) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = TOPIC_NAMES[key][lang];
+                els.topic.appendChild(opt);
+            }
+            els.topic.value = current;
+
+            const labels = document.querySelectorAll('.controls label > span');
+            labels[0].textContent = S.lang;
+            labels[1].textContent = S.topic;
+            labels[2].textContent = S.size;
+            labels[3].textContent = S.count;
+            document.querySelector('.controls label.check span').textContent = S.back;
+            els.newBtn.textContent = S.newBtn;
+            document.querySelector('.words h2').textContent = S.wordsHeading;
+            els.solveBtn.textContent = S.solve;
+            els.printBtn.textContent = S.print;
+            document.querySelector('.note').textContent = S.note;
+            tick();
         }
 
         // ==================== SEGÉDFÜGGVÉNYEK ====================
@@ -458,7 +595,15 @@
         }
 
         function upper(s) {
-            return s.toLocaleUpperCase('hu');
+            return s.toLocaleUpperCase(lang);
+        }
+
+        // Szólista az aktuális nyelven; a "vegyes" minden témakör szavát tartalmazza
+        function getWords(topicKey) {
+            if (topicKey === 'vegyes') {
+                return [...new Set(Object.keys(WORDS).flatMap(k => WORDS[k][lang].split(' ')))];
+            }
+            return WORDS[topicKey][lang].split(' ');
         }
 
         // Irányok [sor, oszlop] lépés: vízszintes, függőleges, átlós (és visszafelé, ha engedélyezett)
@@ -508,9 +653,10 @@
             }
 
             // Üres helyek kitöltése véletlen betűkkel
+            const fill = Array.from(FILL[lang]);
             for (let r = 0; r < n; r++) {
                 for (let c = 0; c < n; c++) {
-                    if (!best.grid[r][c]) best.grid[r][c] = upper(FILL[rand(FILL.length)]);
+                    if (!best.grid[r][c]) best.grid[r][c] = upper(fill[rand(fill.length)]);
                 }
             }
             return best;
@@ -579,11 +725,10 @@
 
         function renderWords() {
             els.wordList.innerHTML = '';
-            const sorted = state.placed.slice().sort((a, b) => a.word.localeCompare(b.word, 'hu'));
+            const sorted = state.placed.slice().sort((a, b) => a.word.localeCompare(b.word, lang));
             for (const item of sorted) {
                 const li = document.createElement('li');
                 li.textContent = item.word;
-                li.dataset.text = item.text;
                 if (item.found) li.classList.add('done');
                 if (state.revealed && !item.found) li.classList.add('shown');
                 els.wordList.appendChild(li);
@@ -591,7 +736,7 @@
         }
 
         function renderProgress() {
-            els.progress.textContent = `Megtalálva: ${state.found} / ${state.placed.length}`;
+            els.progress.textContent = `${STR[lang].found}: ${state.found} / ${state.placed.length}`;
         }
 
         function formatTime(ms) {
@@ -602,7 +747,7 @@
         }
 
         function tick() {
-            els.timer.textContent = `Idő: ${formatTime(Date.now() - state.startTime)}`;
+            els.timer.textContent = `${STR[lang].time}: ${formatTime(Date.now() - state.startTime)}`;
         }
 
         function stopTimer() {
@@ -619,10 +764,9 @@
 
             const n = Number(els.size.value);
             const count = Number(els.count.value);
-            const topic = TOPICS[els.topic.value];
 
             // Csak olyan szó, ami belefér a rácsba (3 betűtől n betűig)
-            const pool = topic.words.filter(w => {
+            const pool = getWords(els.topic.value).filter(w => {
                 const len = Array.from(w).length;
                 return len >= 3 && len <= n;
             });
@@ -645,7 +789,7 @@
             renderWords();
             renderProgress();
             els.message.textContent = '';
-            els.timer.textContent = 'Idő: 00:00';
+            tick();
             state.timerId = setInterval(tick, 1000);
         }
 
@@ -658,10 +802,9 @@
         function checkPath(path) {
             if (path.length < 2 || state.finished) return;
             const letters = path.map(p => state.grid[p.r][p.c]).join('');
-            const reversed = letters.split('').reverse().join('');
+            const reversed = Array.from(letters).reverse().join('');
 
             const item = state.placed.find(p => !p.found && (p.text === letters || p.text === reversed));
-            // Visszafelé húzás csak akkor számít, ha a szó nincs már megtalálva
             if (!item || path.length !== item.cells.length) return;
 
             item.found = true;
@@ -672,7 +815,7 @@
 
             if (state.found === state.placed.length) {
                 finishGame();
-                els.message.textContent = `Gratulálok, megtaláltad az összes szót! Idő: ${formatTime(Date.now() - state.startTime)}`;
+                els.message.textContent = STR[lang].win + formatTime(Date.now() - state.startTime);
             }
         }
 
@@ -685,7 +828,7 @@
             }
             finishGame();
             renderWords();
-            els.message.textContent = 'A megoldás meg van jelölve a rácsban.';
+            els.message.textContent = STR[lang].solved;
         }
 
         // ==================== ESEMÉNYEK ====================
@@ -715,19 +858,22 @@
             clearSel();
         });
 
+        els.lang.addEventListener('change', () => {
+            lang = els.lang.value;
+            applyUI();
+            newPuzzle();
+        });
+        els.topic.addEventListener('change', newPuzzle);
+        els.size.addEventListener('change', newPuzzle);
+        els.count.addEventListener('change', newPuzzle);
+        els.back.addEventListener('change', newPuzzle);
         els.newBtn.addEventListener('click', newPuzzle);
         els.solveBtn.addEventListener('click', solve);
         els.printBtn.addEventListener('click', () => window.print());
 
-        // Témakörök feltöltése
-        for (const [key, t] of Object.entries(TOPICS)) {
-            const opt = document.createElement('option');
-            opt.value = key;
-            opt.textContent = t.name;
-            els.topic.appendChild(opt);
-        }
-
         loadSettings();
+        applyUI();
+        if (savedTopic) els.topic.value = savedTopic;
         newPuzzle();
     </script>
 </body>
