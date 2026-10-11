@@ -728,7 +728,7 @@
             const sorted = state.placed.slice().sort((a, b) => a.word.localeCompare(b.word, lang));
             for (const item of sorted) {
                 const li = document.createElement('li');
-                li.textContent = item.word;
+                li.textContent = upper(item.word);
                 if (item.found) li.classList.add('done');
                 if (state.revealed && !item.found) li.classList.add('shown');
                 els.wordList.appendChild(li);
