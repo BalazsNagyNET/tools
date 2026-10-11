@@ -112,7 +112,8 @@
         .grid {
             display: grid;
             grid-template-columns: repeat(var(--n), 1fr);
-            width: min(92vw, 540px);
+            --gsize: min(92vw, 540px);
+            width: var(--gsize);
             aspect-ratio: 1;
             border: 2px solid #222;
             background: #fff;
@@ -127,7 +128,7 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: calc(min(92vw, 540px) / var(--n) * 0.5);
+            font-size: calc(var(--gsize) / var(--n) * 0.5);
             color: #222;
             border-right: 1px solid #eee;
             border-bottom: 1px solid #eee;
@@ -192,6 +193,11 @@
             margin-top: 1rem;
         }
 
+        @page {
+            size: A4;
+            margin: 12mm;
+        }
+
         @media print {
             body {
                 background: #fff;
@@ -199,11 +205,43 @@
             .container {
                 box-shadow: none;
                 margin: 0;
+                padding: 0;
                 width: auto;
                 max-width: none;
             }
-            .controls, .actions, .note, .message {
+            h1 {
+                font-size: 18pt;
+                margin-bottom: 4mm;
+            }
+            .controls, .actions, .note, .message, .status {
                 display: none;
+            }
+            /* Fix méret A4-re: a rács mindig 165mm, nagy rácsnál is egy oldalon marad */
+            .play {
+                flex-direction: column;
+                align-items: center;
+                gap: 6mm;
+            }
+            .grid {
+                --gsize: 165mm;
+                border-width: 1.5px;
+            }
+            .words {
+                flex: none;
+                width: 100%;
+                min-width: 0;
+            }
+            .words h2 {
+                font-size: 12pt;
+                margin-bottom: 2mm;
+            }
+            .words ul {
+                columns: 3;
+            }
+            .words li {
+                font-size: 11pt;
+                padding: 0;
+                break-inside: avoid;
             }
             .cell.sel, .cell.found {
                 background: none;
