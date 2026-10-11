@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szókereső</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 80vw;
+            max-width: 900px;
+            margin: 2rem auto;
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 0;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                width: auto;
+                margin: 1rem;
+                padding: 1rem;
+            }
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem 1rem;
+            align-items: flex-end;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .controls label {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.9rem;
+            color: #333;
+            gap: 0.25rem;
+        }
+
+        .controls label.check {
+            flex-direction: row;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        select, button {
+            font: inherit;
+            padding: 0.45rem 0.7rem;
+            border-radius: 4px;
+            border: 1px solid #bbb;
+            background: #fff;
+        }
+
+        button {
+            cursor: pointer;
+            background: #1565c0;
+            border-color: #1565c0;
+            color: #fff;
+        }
+
+        button.secondary {
+            background: #fff;
+            color: #1565c0;
+        }
+
+        button:hover {
+            filter: brightness(1.08);
+        }
+
+        .status {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 0.75rem;
+        }
+
+        .message {
+            text-align: center;
+            font-weight: bold;
+            color: #2e7d32;
+            min-height: 1.4em;
+            margin-bottom: 0.5rem;
+        }
+
+        .play {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(var(--n), 1fr);
+            width: min(92vw, 540px);
+            aspect-ratio: 1;
+            border: 2px solid #222;
+            background: #fff;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: calc(min(92vw, 540px) / var(--n) * 0.5);
+            color: #222;
+            border-right: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+            box-sizing: border-box;
+        }
+
+        .cell.sel {
+            background: #ffe082;
+        }
+
+        .cell.found {
+            background: #81c784;
+            color: #fff;
+        }
+
+        .cell.sol {
+            background: #90caf9;
+        }
+
+        .words {
+            min-width: 160px;
+            flex: 0 1 220px;
+        }
+
+        .words h2 {
+            font-size: 1.1rem;
+            margin: 0 0 0.5rem;
+        }
+
+        .words ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .words li {
+            padding: 0.2rem 0;
+            font-size: 1.05rem;
+        }
+
+        .words li.done {
+            text-decoration: line-through;
+            color: #2e7d32;
+        }
+
+        .words li.shown {
+            color: #888;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .note {
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+            }
+            .container {
+                box-shadow: none;
+                margin: 0;
+                width: auto;
+                max-width: none;
+            }
+            .controls, .actions, .note, .message {
+                display: none;
+            }
+            .cell.sel, .cell.found {
+                background: none;
+                color: #000;
+            }
+            .cell.sol {
+                background: #ddd;
+            }
+            .words li.done {
+                text-decoration: none;
+                color: #000;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Szókereső</h1>
+
+        <div class="controls">
+            <label>Témakör
+                <select id="topic"></select>
+            </label>
+            <label>Méret
+                <select id="size">
+                    <option value="8">8 × 8</option>
+                    <option value="10">10 × 10</option>
+                    <option value="12">12 × 12</option>
+                    <option value="15">15 × 15</option>
+                    <option value="20">20 × 20</option>
+                </select>
+            </label>
+            <label>Szavak száma
+                <select id="count">
+                    <option value="6">6</option>
+                    <option value="8">8</option>
+                    <option value="10">10</option>
+                    <option value="12">12</option>
+                    <option value="15">15</option>
+                </select>
+            </label>
+            <label class="check">
+                <input type="checkbox" id="back">
+                Visszafelé is
+            </label>
+            <button id="newBtn" type="button">Új rejtvény</button>
+        </div>
+
+        <div class="status">
+            <span id="progress"></span>
+            <span id="timer">Idő: 00:00</span>
+        </div>
+        <div class="message" id="message"></div>
+
+        <div class="play">
+            <div class="grid" id="grid"></div>
+            <div class="words">
+                <h2>Keresett szavak</h2>
+                <ul id="wordList"></ul>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="solveBtn" type="button" class="secondary">Megoldás</button>
+            <button id="printBtn" type="button" class="secondary">Nyomtatás</button>
+        </div>
+
+        <p class="note">
+            Húzd az ujjadat (vagy az egeret) a szó betűin vízszintesen, függőlegesen vagy átlósan.
+            A szavak a kódba vannak beépítve, így internet nélkül is működik.
+        </p>
+    </div>
+
+    <script>
+        // ==================== SZAVAK (témakörönként) ====================
+        const TOPICS = {
+            allatok: {
+                name: 'Állatok',
+                words: ['kutya', 'macska', 'ló', 'tehén', 'disznó', 'juh', 'kecske', 'nyúl', 'egér', 'patkány', 'róka', 'medve', 'farkas', 'oroszlán', 'tigris', 'elefánt', 'zebra', 'zsiráf', 'majom', 'delfin', 'cápa', 'bálna', 'teknős', 'béka', 'kígyó', 'krokodil', 'pingvin', 'sas', 'bagoly', 'galamb', 'csirke', 'kacsa', 'hattyú', 'pillangó', 'méh', 'hangya', 'pók', 'szarvas', 'hód']
+            },
+            gyumolcs: {
+                name: 'Gyümölcsök és zöldségek',
+                words: ['alma', 'körte', 'szilva', 'barack', 'cseresznye', 'meggy', 'dinnye', 'szőlő', 'banán', 'narancs', 'citrom', 'eper', 'málna', 'ribizli', 'áfonya', 'mandarin', 'kivi', 'ananász', 'mango', 'szeder', 'répa', 'paradicsom', 'uborka', 'paprika', 'burgonya', 'hagyma', 'fokhagyma', 'cékla', 'retek', 'káposzta', 'spenót', 'borsó', 'bab', 'karfiol', 'brokkoli', 'cukkini', 'tök', 'padlizsán', 'saláta']
+            },
+            etel: {
+                name: 'Ételek és italok',
+                words: ['leves', 'kenyér', 'sajt', 'tej', 'vaj', 'túró', 'tojás', 'sonka', 'kolbász', 'pogácsa', 'lángos', 'gulyás', 'pörkölt', 'rétes', 'palacsinta', 'fánk', 'csokoládé', 'méz', 'cukor', 'liszt', 'rizs', 'tészta', 'víz', 'tea', 'kávé', 'kakaó', 'limonádé', 'bor', 'sör', 'pálinka', 'szörp', 'joghurt', 'kefir']
+            },
+            termeszet: {
+                name: 'Természet',
+                words: ['hegy', 'folyó', 'tó', 'tenger', 'erdő', 'mező', 'völgy', 'sziget', 'sivatag', 'barlang', 'vízesés', 'szikla', 'domb', 'patak', 'forrás', 'fa', 'virág', 'fű', 'levél', 'gyökér', 'mag', 'kő', 'homok', 'föld', 'liget', 'tisztás', 'mocsár', 'vulkán', 'gleccser', 'óceán', 'tavasz', 'csillag', 'hold', 'napfény']
+            },
+            csalad: {
+                name: 'Család és emberek',
+                words: ['anya', 'apa', 'nagymama', 'nagypapa', 'fiú', 'lány', 'testvér', 'unoka', 'rokon', 'barát', 'szomszéd', 'gyermek', 'férj', 'feleség', 'nagynéni', 'nagybácsi', 'keresztapa', 'keresztanya', 'unokatestvér', 'férfi', 'nő', 'család', 'gyerek', 'ember']
+            },
+            iskola: {
+                name: 'Iskola',
+                words: ['tanár', 'diák', 'tanterem', 'tábla', 'kréta', 'füzet', 'toll', 'ceruza', 'radír', 'könyv', 'táska', 'szünet', 'tanóra', 'iskola', 'osztály', 'vizsga', 'dolgozat', 'térkép', 'tornaterem', 'igazgató', 'rajz', 'betű', 'szám', 'körző', 'vonalzó', 'olló', 'ragasztó', 'tankönyv', 'óra', 'jegy']
+            },
+            idojaras: {
+                name: 'Időjárás és évszakok',
+                words: ['eső', 'hó', 'szél', 'felhő', 'köd', 'villám', 'mennydörgés', 'jég', 'zivatar', 'fagy', 'hőség', 'tavasz', 'nyár', 'ősz', 'tél', 'hőmérő', 'szivárvány', 'párás', 'hideg', 'meleg', 'napos', 'borús', 'vihar', 'hurrikán', 'szárazság']
+            },
+            kozlekedes: {
+                name: 'Közlekedés',
+                words: ['autó', 'busz', 'vonat', 'villamos', 'metró', 'repülő', 'hajó', 'kerékpár', 'motor', 'taxi', 'teherautó', 'mentő', 'kamion', 'állomás', 'repülőtér', 'kikötő', 'sín', 'híd', 'megálló', 'helikopter', 'csónak', 'robogó', 'sofőr', 'járda', 'alagút', 'pályaudvar', 'jegy', 'út']
+            },
+            sport: {
+                name: 'Sport',
+                words: ['foci', 'kosárlabda', 'röplabda', 'tenisz', 'úszás', 'futás', 'síelés', 'korcsolya', 'birkózás', 'kézilabda', 'vívás', 'torna', 'sakk', 'golf', 'evezés', 'edzés', 'mérkőzés', 'gól', 'kapus', 'labda', 'pálya', 'verseny', 'érem', 'serleg', 'edző', 'csapat', 'versenyző', 'sprint', 'ugrás', 'dobás']
+            },
+            test: {
+                name: 'Test',
+                words: ['fej', 'kar', 'láb', 'kéz', 'ujj', 'szem', 'fül', 'orr', 'száj', 'nyak', 'váll', 'hát', 'has', 'térd', 'boka', 'comb', 'szív', 'tüdő', 'agy', 'haj', 'fog', 'nyelv', 'csont', 'bőr', 'arc', 'homlok', 'ajak', 'köröm', 'könyök']
+            },
+            ruhazat: {
+                name: 'Ruházat',
+                words: ['kabát', 'kalap', 'sapka', 'sál', 'kesztyű', 'cipő', 'csizma', 'szandál', 'nadrág', 'szoknya', 'ing', 'póló', 'pulóver', 'zokni', 'öv', 'ruha', 'kardigán', 'dzseki', 'pizsama', 'harisnya', 'papucs', 'bakancs', 'nyakkendő', 'mellény', 'köpeny', 'overál']
+            },
+            otthon: {
+                name: 'Otthon és lakás',
+                words: ['szoba', 'konyha', 'fürdőszoba', 'nappali', 'hálószoba', 'kanapé', 'szék', 'asztal', 'ágy', 'szekrény', 'polc', 'lámpa', 'tükör', 'ajtó', 'ablak', 'kert', 'erkély', 'padlás', 'pince', 'fotel', 'hűtő', 'mosógép', 'porszívó', 'szőnyeg', 'függöny', 'párna', 'takaró', 'kád', 'lépcső', 'folyosó']
+            },
+            zene: {
+                name: 'Zene',
+                words: ['dal', 'hangszer', 'zongora', 'gitár', 'hegedű', 'dob', 'fuvola', 'trombita', 'szaxofon', 'csellő', 'harmonika', 'klarinét', 'zenekar', 'kórus', 'ének', 'hangjegy', 'koncert', 'ritmus', 'dallam', 'hangerő', 'lemez', 'karmester', 'zeneszerző', 'énekes', 'zenész']
+            },
+            szakmak: {
+                name: 'Szakmák',
+                words: ['orvos', 'ápoló', 'pék', 'szakács', 'pincér', 'mérnök', 'ügyvéd', 'bíró', 'rendőr', 'tűzoltó', 'pilóta', 'pap', 'kertész', 'villanyszerelő', 'asztalos', 'festő', 'kőműves', 'fodrász', 'vadász', 'halász', 'eladó', 'könyvelő', 'programozó', 'újságíró', 'fényképész', 'színész', 'zenész', 'állatorvos', 'munkás', 'bányász', 'postás']
+            }
+        };
+
+        // Vegyes = minden témakör szava
+        TOPICS.vegyes = {
+            name: 'Vegyes',
+            words: [...new Set(Object.values(TOPICS).flatMap(t => t.words))]
+        };
+
+        // Töltő betűk: a magyar ábécé egybetűs betűi (dz, cs, gy, ... digráfok nélkül)
+        const FILL = 'aábcdeéfghiíjklmnoóöőprstuúüűvz';
+
+        const STORAGE_KEY = 'szokereso-settings';
+
+        // ==================== ÁLLAPOT ====================
+        const state = {
+            n: 0,
+            grid: [],
+            cellEls: [],
+            placed: [],
+            found: 0,
+            revealed: false,
+            finished: false,
+            startTime: 0,
+            timerId: null
+        };
+
+        let dragging = false;
+        let dragStart = null;
+        let selEls = [];
+
+        const els = {
+            topic: document.getElementById('topic'),
+            size: document.getElementById('size'),
+            count: document.getElementById('count'),
+            back: document.getElementById('back'),
+            newBtn: document.getElementById('newBtn'),
+            grid: document.getElementById('grid'),
+            wordList: document.getElementById('wordList'),
+            progress: document.getElementById('progress'),
+            timer: document.getElementById('timer'),
+            message: document.getElementById('message'),
+            solveBtn: document.getElementById('solveBtn'),
+            printBtn: document.getElementById('printBtn')
+        };
+
+        // ==================== BEÁLLÍTÁSOK MENTÉSE ====================
+        function loadSettings() {
+            try {
+                const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+                if (s.topic && TOPICS[s.topic]) els.topic.value = s.topic;
+                if (s.size) els.size.value = String(s.size);
+                if (s.count) els.count.value = String(s.count);
+                if (typeof s.back === 'boolean') els.back.checked = s.back;
+            } catch (e) {
+                // localStorage nem elérhető: alapértékekkel megyünk tovább
+            }
+        }
+
+        function saveSettings() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    topic: els.topic.value,
+                    size: Number(els.size.value),
+                    count: Number(els.count.value),
+                    back: els.back.checked
+                }));
+            } catch (e) {
+                // nem baj, ha nem menthető
+            }
+        }
+
+        // ==================== SEGÉDFÜGGVÉNYEK ====================
+        const rand = n => Math.floor(Math.random() * n);
+
+        function shuffle(arr) {
+            const a = arr.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = rand(i + 1);
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function upper(s) {
+            return s.toLocaleUpperCase('hu');
+        }
+
+        // Irányok [sor, oszlop] lépés: vízszintes, függőleges, átlós (és visszafelé, ha engedélyezett)
+        const DIRS_FORWARD = [[0, 1], [1, 0], [1, 1], [1, -1]];
+        const DIRS_ALL = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, -1], [1, -1], [-1, 1]];
+
+        // Szó elhelyezése: több kísérlet; a leghosszabb szavak először
+        function generate(words, n, dirs) {
+            let best = null;
+
+            for (let attempt = 0; attempt < 200; attempt++) {
+                const grid = Array.from({ length: n }, () => Array(n).fill(''));
+                const placed = [];
+
+                for (const w of words) {
+                    const chars = Array.from(upper(w));
+                    const len = chars.length;
+                    let done = false;
+
+                    for (let t = 0; t < 300 && !done; t++) {
+                        const [dr, dc] = dirs[rand(dirs.length)];
+                        const r = rand(n);
+                        const c = rand(n);
+                        const endR = r + dr * (len - 1);
+                        const endC = c + dc * (len - 1);
+                        if (endR < 0 || endR >= n || endC < 0 || endC >= n) continue;
+
+                        let fits = true;
+                        for (let i = 0; i < len; i++) {
+                            const cell = grid[r + dr * i][c + dc * i];
+                            if (cell && cell !== chars[i]) { fits = false; break; }
+                        }
+                        if (!fits) continue;
+
+                        const cells = [];
+                        for (let i = 0; i < len; i++) {
+                            grid[r + dr * i][c + dc * i] = chars[i];
+                            cells.push({ r: r + dr * i, c: c + dc * i });
+                        }
+                        placed.push({ word: w, text: chars.join(''), cells, found: false });
+                        done = true;
+                    }
+                }
+
+                if (!best || placed.length > best.placed.length) best = { grid, placed };
+                if (placed.length === words.length) break;
+            }
+
+            // Üres helyek kitöltése véletlen betűkkel
+            for (let r = 0; r < n; r++) {
+                for (let c = 0; c < n; c++) {
+                    if (!best.grid[r][c]) best.grid[r][c] = upper(FILL[rand(FILL.length)]);
+                }
+            }
+            return best;
+        }
+
+        // Kijelölt vonal: a húzás irányát a legközelebbi vízszintes/függőleges/átlós irányra igazítja
+        function linePath(a, b) {
+            const dr = b.r - a.r;
+            const dc = b.c - a.c;
+            const ar = Math.abs(dr);
+            const ac = Math.abs(dc);
+            if (ar === 0 && ac === 0) return [a];
+
+            let sr, sc, len;
+            if (ar > 2 * ac) { sr = Math.sign(dr); sc = 0; len = ar; }
+            else if (ac > 2 * ar) { sr = 0; sc = Math.sign(dc); len = ac; }
+            else { sr = Math.sign(dr); sc = Math.sign(dc); len = Math.min(ar, ac); }
+
+            const path = [];
+            for (let i = 0; i <= len; i++) {
+                path.push({ r: a.r + sr * i, c: a.c + sc * i });
+            }
+            return path;
+        }
+
+        function cellAt(e) {
+            const rect = els.grid.getBoundingClientRect();
+            const size = rect.width / state.n;
+            const c = Math.min(state.n - 1, Math.max(0, Math.floor((e.clientX - rect.left) / size)));
+            const r = Math.min(state.n - 1, Math.max(0, Math.floor((e.clientY - rect.top) / size)));
+            return { r, c };
+        }
+
+        function clearSel() {
+            selEls.forEach(el => el.classList.remove('sel'));
+            selEls = [];
+        }
+
+        function showSel(path) {
+            clearSel();
+            for (const p of path) {
+                const el = state.cellEls[p.r][p.c];
+                el.classList.add('sel');
+                selEls.push(el);
+            }
+        }
+
+        // ==================== RENDER ====================
+        function renderGrid() {
+            els.grid.innerHTML = '';
+            els.grid.style.setProperty('--n', state.n);
+            state.cellEls = [];
+            const frag = document.createDocumentFragment();
+            for (let r = 0; r < state.n; r++) {
+                state.cellEls.push([]);
+                for (let c = 0; c < state.n; c++) {
+                    const el = document.createElement('div');
+                    el.className = 'cell';
+                    el.textContent = state.grid[r][c];
+                    state.cellEls[r].push(el);
+                    frag.appendChild(el);
+                }
+            }
+            els.grid.appendChild(frag);
+        }
+
+        function renderWords() {
+            els.wordList.innerHTML = '';
+            const sorted = state.placed.slice().sort((a, b) => a.word.localeCompare(b.word, 'hu'));
+            for (const item of sorted) {
+                const li = document.createElement('li');
+                li.textContent = item.word;
+                li.dataset.text = item.text;
+                if (item.found) li.classList.add('done');
+                if (state.revealed && !item.found) li.classList.add('shown');
+                els.wordList.appendChild(li);
+            }
+        }
+
+        function renderProgress() {
+            els.progress.textContent = `Megtalálva: ${state.found} / ${state.placed.length}`;
+        }
+
+        function formatTime(ms) {
+            const s = Math.floor(ms / 1000);
+            const mm = String(Math.floor(s / 60)).padStart(2, '0');
+            const ss = String(s % 60).padStart(2, '0');
+            return `${mm}:${ss}`;
+        }
+
+        function tick() {
+            els.timer.textContent = `Idő: ${formatTime(Date.now() - state.startTime)}`;
+        }
+
+        function stopTimer() {
+            if (state.timerId) {
+                clearInterval(state.timerId);
+                state.timerId = null;
+            }
+        }
+
+        // ==================== JÁTÉK ====================
+        function newPuzzle() {
+            saveSettings();
+            stopTimer();
+
+            const n = Number(els.size.value);
+            const count = Number(els.count.value);
+            const topic = TOPICS[els.topic.value];
+
+            // Csak olyan szó, ami belefér a rácsba (3 betűtől n betűig)
+            const pool = topic.words.filter(w => {
+                const len = Array.from(w).length;
+                return len >= 3 && len <= n;
+            });
+            const chosen = shuffle(pool).slice(0, count);
+            // Hosszabbakat előbb helyezzük el, így könnyebben férnek el
+            const byLength = chosen.slice().sort((a, b) => Array.from(b).length - Array.from(a).length);
+
+            const dirs = els.back.checked ? DIRS_ALL : DIRS_FORWARD;
+            const result = generate(byLength, n, dirs);
+
+            state.n = n;
+            state.grid = result.grid;
+            state.placed = result.placed;
+            state.found = 0;
+            state.revealed = false;
+            state.finished = false;
+            state.startTime = Date.now();
+
+            renderGrid();
+            renderWords();
+            renderProgress();
+            els.message.textContent = '';
+            els.timer.textContent = 'Idő: 00:00';
+            state.timerId = setInterval(tick, 1000);
+        }
+
+        function finishGame() {
+            state.finished = true;
+            stopTimer();
+            tick();
+        }
+
+        function checkPath(path) {
+            if (path.length < 2 || state.finished) return;
+            const letters = path.map(p => state.grid[p.r][p.c]).join('');
+            const reversed = letters.split('').reverse().join('');
+
+            const item = state.placed.find(p => !p.found && (p.text === letters || p.text === reversed));
+            // Visszafelé húzás csak akkor számít, ha a szó nincs már megtalálva
+            if (!item || path.length !== item.cells.length) return;
+
+            item.found = true;
+            state.found++;
+            for (const p of path) state.cellEls[p.r][p.c].classList.add('found');
+            renderWords();
+            renderProgress();
+
+            if (state.found === state.placed.length) {
+                finishGame();
+                els.message.textContent = `Gratulálok, megtaláltad az összes szót! Idő: ${formatTime(Date.now() - state.startTime)}`;
+            }
+        }
+
+        function solve() {
+            if (state.finished) return;
+            state.revealed = true;
+            for (const item of state.placed) {
+                if (item.found) continue;
+                for (const p of item.cells) state.cellEls[p.r][p.c].classList.add('sol');
+            }
+            finishGame();
+            renderWords();
+            els.message.textContent = 'A megoldás meg van jelölve a rácsban.';
+        }
+
+        // ==================== ESEMÉNYEK ====================
+        els.grid.addEventListener('pointerdown', e => {
+            if (!state.n || state.finished) return;
+            e.preventDefault();
+            els.grid.setPointerCapture(e.pointerId);
+            dragging = true;
+            dragStart = cellAt(e);
+            showSel([dragStart]);
+        });
+
+        els.grid.addEventListener('pointermove', e => {
+            if (!dragging) return;
+            showSel(linePath(dragStart, cellAt(e)));
+        });
+
+        els.grid.addEventListener('pointerup', e => {
+            if (!dragging) return;
+            dragging = false;
+            checkPath(linePath(dragStart, cellAt(e)));
+            clearSel();
+        });
+
+        els.grid.addEventListener('pointercancel', () => {
+            dragging = false;
+            clearSel();
+        });
+
+        els.newBtn.addEventListener('click', newPuzzle);
+        els.solveBtn.addEventListener('click', solve);
+        els.printBtn.addEventListener('click', () => window.print());
+
+        // Témakörök feltöltése
+        for (const [key, t] of Object.entries(TOPICS)) {
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = t.name;
+            els.topic.appendChild(opt);
+        }
+
+        loadSettings();
+        newPuzzle();
+    </script>
+</body>
+</html>
